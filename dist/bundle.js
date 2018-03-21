@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "dist/";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 18);
+/******/ 	return __webpack_require__(__webpack_require__.s = 25);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -142,6 +142,163 @@ function equals(a, b) {
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// a duplex stream is just a stream that is both readable and writable.
+// Since JS doesn't have multiple prototypal inheritance, this class
+// prototypally inherits from Readable, and then parasitically from
+// Writable.
+
+
+
+/*<replacement>*/
+
+var processNextTick = __webpack_require__(8).nextTick;
+/*</replacement>*/
+
+/*<replacement>*/
+var objectKeys = Object.keys || function (obj) {
+  var keys = [];
+  for (var key in obj) {
+    keys.push(key);
+  }return keys;
+};
+/*</replacement>*/
+
+module.exports = Duplex;
+
+/*<replacement>*/
+var util = __webpack_require__(7);
+util.inherits = __webpack_require__(4);
+/*</replacement>*/
+
+var Readable = __webpack_require__(18);
+var Writable = __webpack_require__(12);
+
+util.inherits(Duplex, Readable);
+
+var keys = objectKeys(Writable.prototype);
+for (var v = 0; v < keys.length; v++) {
+  var method = keys[v];
+  if (!Duplex.prototype[method]) Duplex.prototype[method] = Writable.prototype[method];
+}
+
+function Duplex(options) {
+  if (!(this instanceof Duplex)) return new Duplex(options);
+
+  Readable.call(this, options);
+  Writable.call(this, options);
+
+  if (options && options.readable === false) this.readable = false;
+
+  if (options && options.writable === false) this.writable = false;
+
+  this.allowHalfOpen = true;
+  if (options && options.allowHalfOpen === false) this.allowHalfOpen = false;
+
+  this.once('end', onend);
+}
+
+// the no-half-open enforcer
+function onend() {
+  // if we allow half-open state, or if the writable side ended,
+  // then we're ok.
+  if (this.allowHalfOpen || this._writableState.ended) return;
+
+  // no more data can be written.
+  // But allow more writes to happen in this tick.
+  processNextTick(onEndNT, this);
+}
+
+function onEndNT(self) {
+  self.end();
+}
+
+Object.defineProperty(Duplex.prototype, 'destroyed', {
+  get: function () {
+    if (this._readableState === undefined || this._writableState === undefined) {
+      return false;
+    }
+    return this._readableState.destroyed && this._writableState.destroyed;
+  },
+  set: function (value) {
+    // we ignore the value if the stream
+    // has not been initialized yet
+    if (this._readableState === undefined || this._writableState === undefined) {
+      return;
+    }
+
+    // backward compatibility, the user is explicitly
+    // managing destroyed
+    this._readableState.destroyed = value;
+    this._writableState.destroyed = value;
+  }
+});
+
+Duplex.prototype._destroy = function (err, cb) {
+  this.push(null);
+  this.end();
+
+  processNextTick(cb, err);
+};
+
+function forEach(xs, f) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    f(xs[i], i);
+  }
+}
+
+/***/ }),
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -154,28 +311,57 @@ function setGL(_gl) {
 
 
 /***/ }),
-/* 2 */
+/* 4 */
+/***/ (function(module, exports) {
+
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+
+/***/ }),
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__gl_matrix_common__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__gl_matrix_mat2__ = __webpack_require__(19);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__gl_matrix_mat2d__ = __webpack_require__(20);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__gl_matrix_mat3__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__gl_matrix_mat4__ = __webpack_require__(21);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__gl_matrix_quat__ = __webpack_require__(22);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__gl_matrix_vec2__ = __webpack_require__(23);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__gl_matrix_vec3__ = __webpack_require__(6);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__gl_matrix_vec4__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__gl_matrix_mat2__ = __webpack_require__(26);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__gl_matrix_mat2d__ = __webpack_require__(27);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__gl_matrix_mat3__ = __webpack_require__(14);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__gl_matrix_mat4__ = __webpack_require__(28);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__gl_matrix_quat__ = __webpack_require__(29);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__gl_matrix_vec2__ = __webpack_require__(30);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__gl_matrix_vec3__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__gl_matrix_vec4__ = __webpack_require__(16);
 /* unused harmony reexport glMatrix */
 /* unused harmony reexport mat2 */
 /* unused harmony reexport mat2d */
 /* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "a", function() { return __WEBPACK_IMPORTED_MODULE_3__gl_matrix_mat3__; });
 /* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "b", function() { return __WEBPACK_IMPORTED_MODULE_4__gl_matrix_mat4__; });
 /* unused harmony reexport quat */
-/* unused harmony reexport vec2 */
-/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "c", function() { return __WEBPACK_IMPORTED_MODULE_7__gl_matrix_vec3__; });
-/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "d", function() { return __WEBPACK_IMPORTED_MODULE_8__gl_matrix_vec4__; });
+/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "c", function() { return __WEBPACK_IMPORTED_MODULE_6__gl_matrix_vec2__; });
+/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "d", function() { return __WEBPACK_IMPORTED_MODULE_7__gl_matrix_vec3__; });
+/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, "e", function() { return __WEBPACK_IMPORTED_MODULE_8__gl_matrix_vec4__; });
 /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
  * @author Brandon Jones
@@ -217,95 +403,1714 @@ THE SOFTWARE. */
 
 
 /***/ }),
-/* 3 */
+/* 6 */
 /***/ (function(module, exports) {
 
-module.exports = invert;
+// shim for using process in browser
+var process = module.exports = {};
 
-/**
- * Inverts a mat4
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the source matrix
- * @returns {mat4} out
- */
-function invert(out, a) {
-    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
-        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
-        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
-        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15],
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
 
-        b00 = a00 * a11 - a01 * a10,
-        b01 = a00 * a12 - a02 * a10,
-        b02 = a00 * a13 - a03 * a10,
-        b03 = a01 * a12 - a02 * a11,
-        b04 = a01 * a13 - a03 * a11,
-        b05 = a02 * a13 - a03 * a12,
-        b06 = a20 * a31 - a21 * a30,
-        b07 = a20 * a32 - a22 * a30,
-        b08 = a20 * a33 - a23 * a30,
-        b09 = a21 * a32 - a22 * a31,
-        b10 = a21 * a33 - a23 * a31,
-        b11 = a22 * a33 - a23 * a32,
+var cachedSetTimeout;
+var cachedClearTimeout;
 
-        // Calculate the determinant
-        det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-
-    if (!det) { 
-        return null; 
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
     }
-    det = 1.0 / det;
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
 
-    out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
-    out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det;
-    out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det;
-    out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det;
-    out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det;
-    out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det;
-    out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det;
-    out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det;
-    out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det;
-    out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det;
-    out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det;
-    out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det;
-    out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det;
-    out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det;
-    out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det;
-    out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det;
 
-    return out;
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
 };
 
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
 /***/ }),
-/* 4 */
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+
+function isArray(arg) {
+  if (Array.isArray) {
+    return Array.isArray(arg);
+  }
+  return objectToString(arg) === '[object Array]';
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = Buffer.isBuffer;
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {
+
+if (!process.version ||
+    process.version.indexOf('v0.') === 0 ||
+    process.version.indexOf('v1.') === 0 && process.version.indexOf('v1.8.') !== 0) {
+  module.exports = { nextTick: nextTick };
+} else {
+  module.exports = process
+}
+
+function nextTick(fn, arg1, arg2, arg3) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('"callback" argument must be a function');
+  }
+  var len = arguments.length;
+  var args, i;
+  switch (len) {
+  case 0:
+  case 1:
+    return process.nextTick(fn);
+  case 2:
+    return process.nextTick(function afterTickOne() {
+      fn.call(null, arg1);
+    });
+  case 3:
+    return process.nextTick(function afterTickTwo() {
+      fn.call(null, arg1, arg2);
+    });
+  case 4:
+    return process.nextTick(function afterTickThree() {
+      fn.call(null, arg1, arg2, arg3);
+    });
+  default:
+    args = new Array(len - 1);
+    i = 0;
+    while (i < args.length) {
+      args[i++] = arguments[i];
+    }
+    return process.nextTick(function afterTick() {
+      fn.apply(null, args);
+    });
+  }
+}
+
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* eslint-disable node/no-deprecated-api */
+var buffer = __webpack_require__(21)
+var Buffer = buffer.Buffer
+
+// alternative to using Object.keys for old browsers
+function copyProps (src, dst) {
+  for (var key in src) {
+    dst[key] = src[key]
+  }
+}
+if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow) {
+  module.exports = buffer
+} else {
+  // Copy properties from require('buffer')
+  copyProps(buffer, exports)
+  exports.Buffer = SafeBuffer
+}
+
+function SafeBuffer (arg, encodingOrOffset, length) {
+  return Buffer(arg, encodingOrOffset, length)
+}
+
+// Copy static methods from Buffer
+copyProps(Buffer, SafeBuffer)
+
+SafeBuffer.from = function (arg, encodingOrOffset, length) {
+  if (typeof arg === 'number') {
+    throw new TypeError('Argument must not be a number')
+  }
+  return Buffer(arg, encodingOrOffset, length)
+}
+
+SafeBuffer.alloc = function (size, fill, encoding) {
+  if (typeof size !== 'number') {
+    throw new TypeError('Argument must be a number')
+  }
+  var buf = Buffer(size)
+  if (fill !== undefined) {
+    if (typeof encoding === 'string') {
+      buf.fill(fill, encoding)
+    } else {
+      buf.fill(fill)
+    }
+  } else {
+    buf.fill(0)
+  }
+  return buf
+}
+
+SafeBuffer.allocUnsafe = function (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('Argument must be a number')
+  }
+  return Buffer(size)
+}
+
+SafeBuffer.allocUnsafeSlow = function (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('Argument must be a number')
+  }
+  return buffer.SlowBuffer(size)
+}
+
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports) {
 
-module.exports = normalize;
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-/**
- * Normalize a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to normalize
- * @returns {vec3} out
- */
-function normalize(out, a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2]
-    var len = x*x + y*y + z*z
-    if (len > 0) {
-        //TODO: evaluate use of glm_invsqrt here?
-        len = 1 / Math.sqrt(len)
-        out[0] = a[0] * len
-        out[1] = a[1] * len
-        out[2] = a[2] * len
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
     }
-    return out
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(18);
+exports.Stream = exports;
+exports.Readable = exports;
+exports.Writable = __webpack_require__(12);
+exports.Duplex = __webpack_require__(2);
+exports.Transform = __webpack_require__(23);
+exports.PassThrough = __webpack_require__(51);
+
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process, setImmediate, global) {// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// A bit simpler than readable streams.
+// Implement an async ._write(chunk, encoding, cb), and it'll handle all
+// the drain event emission and buffering.
+
+
+
+/*<replacement>*/
+
+var processNextTick = __webpack_require__(8).nextTick;
+/*</replacement>*/
+
+module.exports = Writable;
+
+/* <replacement> */
+function WriteReq(chunk, encoding, cb) {
+  this.chunk = chunk;
+  this.encoding = encoding;
+  this.callback = cb;
+  this.next = null;
+}
+
+// It seems a linked list but it is not
+// there will be only 2 of these for each stream
+function CorkedRequest(state) {
+  var _this = this;
+
+  this.next = null;
+  this.entry = null;
+  this.finish = function () {
+    onCorkedFinish(_this, state);
+  };
+}
+/* </replacement> */
+
+/*<replacement>*/
+var asyncWrite = !process.browser && ['v0.10', 'v0.9.'].indexOf(process.version.slice(0, 5)) > -1 ? setImmediate : processNextTick;
+/*</replacement>*/
+
+/*<replacement>*/
+var Duplex;
+/*</replacement>*/
+
+Writable.WritableState = WritableState;
+
+/*<replacement>*/
+var util = __webpack_require__(7);
+util.inherits = __webpack_require__(4);
+/*</replacement>*/
+
+/*<replacement>*/
+var internalUtil = {
+  deprecate: __webpack_require__(50)
+};
+/*</replacement>*/
+
+/*<replacement>*/
+var Stream = __webpack_require__(20);
+/*</replacement>*/
+
+/*<replacement>*/
+
+var Buffer = __webpack_require__(9).Buffer;
+var OurUint8Array = global.Uint8Array || function () {};
+function _uint8ArrayToBuffer(chunk) {
+  return Buffer.from(chunk);
+}
+function _isUint8Array(obj) {
+  return Buffer.isBuffer(obj) || obj instanceof OurUint8Array;
+}
+
+/*</replacement>*/
+
+var destroyImpl = __webpack_require__(22);
+
+util.inherits(Writable, Stream);
+
+function nop() {}
+
+function WritableState(options, stream) {
+  Duplex = Duplex || __webpack_require__(2);
+
+  options = options || {};
+
+  // Duplex streams are both readable and writable, but share
+  // the same options object.
+  // However, some cases require setting options to different
+  // values for the readable and the writable sides of the duplex stream.
+  // These options can be provided separately as readableXXX and writableXXX.
+  var isDuplex = stream instanceof Duplex;
+
+  // object stream flag to indicate whether or not this stream
+  // contains buffers or objects.
+  this.objectMode = !!options.objectMode;
+
+  if (isDuplex) this.objectMode = this.objectMode || !!options.writableObjectMode;
+
+  // the point at which write() starts returning false
+  // Note: 0 is a valid value, means that we always return false if
+  // the entire buffer is not flushed immediately on write()
+  var hwm = options.highWaterMark;
+  var writableHwm = options.writableHighWaterMark;
+  var defaultHwm = this.objectMode ? 16 : 16 * 1024;
+
+  if (hwm || hwm === 0) this.highWaterMark = hwm;else if (isDuplex && (writableHwm || writableHwm === 0)) this.highWaterMark = writableHwm;else this.highWaterMark = defaultHwm;
+
+  // cast to ints.
+  this.highWaterMark = Math.floor(this.highWaterMark);
+
+  // if _final has been called
+  this.finalCalled = false;
+
+  // drain event flag.
+  this.needDrain = false;
+  // at the start of calling end()
+  this.ending = false;
+  // when end() has been called, and returned
+  this.ended = false;
+  // when 'finish' is emitted
+  this.finished = false;
+
+  // has it been destroyed
+  this.destroyed = false;
+
+  // should we decode strings into buffers before passing to _write?
+  // this is here so that some node-core streams can optimize string
+  // handling at a lower level.
+  var noDecode = options.decodeStrings === false;
+  this.decodeStrings = !noDecode;
+
+  // Crypto is kind of old and crusty.  Historically, its default string
+  // encoding is 'binary' so we have to make this configurable.
+  // Everything else in the universe uses 'utf8', though.
+  this.defaultEncoding = options.defaultEncoding || 'utf8';
+
+  // not an actual buffer we keep track of, but a measurement
+  // of how much we're waiting to get pushed to some underlying
+  // socket or file.
+  this.length = 0;
+
+  // a flag to see when we're in the middle of a write.
+  this.writing = false;
+
+  // when true all writes will be buffered until .uncork() call
+  this.corked = 0;
+
+  // a flag to be able to tell if the onwrite cb is called immediately,
+  // or on a later tick.  We set this to true at first, because any
+  // actions that shouldn't happen until "later" should generally also
+  // not happen before the first write call.
+  this.sync = true;
+
+  // a flag to know if we're processing previously buffered items, which
+  // may call the _write() callback in the same tick, so that we don't
+  // end up in an overlapped onwrite situation.
+  this.bufferProcessing = false;
+
+  // the callback that's passed to _write(chunk,cb)
+  this.onwrite = function (er) {
+    onwrite(stream, er);
+  };
+
+  // the callback that the user supplies to write(chunk,encoding,cb)
+  this.writecb = null;
+
+  // the amount that is being written when _write is called.
+  this.writelen = 0;
+
+  this.bufferedRequest = null;
+  this.lastBufferedRequest = null;
+
+  // number of pending user-supplied write callbacks
+  // this must be 0 before 'finish' can be emitted
+  this.pendingcb = 0;
+
+  // emit prefinish if the only thing we're waiting for is _write cbs
+  // This is relevant for synchronous Transform streams
+  this.prefinished = false;
+
+  // True if the error was already emitted and should not be thrown again
+  this.errorEmitted = false;
+
+  // count buffered requests
+  this.bufferedRequestCount = 0;
+
+  // allocate the first CorkedRequest, there is always
+  // one allocated and free to use, and we maintain at most two
+  this.corkedRequestsFree = new CorkedRequest(this);
+}
+
+WritableState.prototype.getBuffer = function getBuffer() {
+  var current = this.bufferedRequest;
+  var out = [];
+  while (current) {
+    out.push(current);
+    current = current.next;
+  }
+  return out;
+};
+
+(function () {
+  try {
+    Object.defineProperty(WritableState.prototype, 'buffer', {
+      get: internalUtil.deprecate(function () {
+        return this.getBuffer();
+      }, '_writableState.buffer is deprecated. Use _writableState.getBuffer ' + 'instead.', 'DEP0003')
+    });
+  } catch (_) {}
+})();
+
+// Test _writableState for inheritance to account for Duplex streams,
+// whose prototype chain only points to Readable.
+var realHasInstance;
+if (typeof Symbol === 'function' && Symbol.hasInstance && typeof Function.prototype[Symbol.hasInstance] === 'function') {
+  realHasInstance = Function.prototype[Symbol.hasInstance];
+  Object.defineProperty(Writable, Symbol.hasInstance, {
+    value: function (object) {
+      if (realHasInstance.call(this, object)) return true;
+      if (this !== Writable) return false;
+
+      return object && object._writableState instanceof WritableState;
+    }
+  });
+} else {
+  realHasInstance = function (object) {
+    return object instanceof this;
+  };
+}
+
+function Writable(options) {
+  Duplex = Duplex || __webpack_require__(2);
+
+  // Writable ctor is applied to Duplexes, too.
+  // `realHasInstance` is necessary because using plain `instanceof`
+  // would return false, as no `_writableState` property is attached.
+
+  // Trying to use the custom `instanceof` for Writable here will also break the
+  // Node.js LazyTransform implementation, which has a non-trivial getter for
+  // `_writableState` that would lead to infinite recursion.
+  if (!realHasInstance.call(Writable, this) && !(this instanceof Duplex)) {
+    return new Writable(options);
+  }
+
+  this._writableState = new WritableState(options, this);
+
+  // legacy.
+  this.writable = true;
+
+  if (options) {
+    if (typeof options.write === 'function') this._write = options.write;
+
+    if (typeof options.writev === 'function') this._writev = options.writev;
+
+    if (typeof options.destroy === 'function') this._destroy = options.destroy;
+
+    if (typeof options.final === 'function') this._final = options.final;
+  }
+
+  Stream.call(this);
+}
+
+// Otherwise people can pipe Writable streams, which is just wrong.
+Writable.prototype.pipe = function () {
+  this.emit('error', new Error('Cannot pipe, not readable'));
+};
+
+function writeAfterEnd(stream, cb) {
+  var er = new Error('write after end');
+  // TODO: defer error events consistently everywhere, not just the cb
+  stream.emit('error', er);
+  processNextTick(cb, er);
+}
+
+// Checks that a user-supplied chunk is valid, especially for the particular
+// mode the stream is in. Currently this means that `null` is never accepted
+// and undefined/non-string values are only allowed in object mode.
+function validChunk(stream, state, chunk, cb) {
+  var valid = true;
+  var er = false;
+
+  if (chunk === null) {
+    er = new TypeError('May not write null values to stream');
+  } else if (typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
+    er = new TypeError('Invalid non-string/buffer chunk');
+  }
+  if (er) {
+    stream.emit('error', er);
+    processNextTick(cb, er);
+    valid = false;
+  }
+  return valid;
+}
+
+Writable.prototype.write = function (chunk, encoding, cb) {
+  var state = this._writableState;
+  var ret = false;
+  var isBuf = !state.objectMode && _isUint8Array(chunk);
+
+  if (isBuf && !Buffer.isBuffer(chunk)) {
+    chunk = _uint8ArrayToBuffer(chunk);
+  }
+
+  if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = null;
+  }
+
+  if (isBuf) encoding = 'buffer';else if (!encoding) encoding = state.defaultEncoding;
+
+  if (typeof cb !== 'function') cb = nop;
+
+  if (state.ended) writeAfterEnd(this, cb);else if (isBuf || validChunk(this, state, chunk, cb)) {
+    state.pendingcb++;
+    ret = writeOrBuffer(this, state, isBuf, chunk, encoding, cb);
+  }
+
+  return ret;
+};
+
+Writable.prototype.cork = function () {
+  var state = this._writableState;
+
+  state.corked++;
+};
+
+Writable.prototype.uncork = function () {
+  var state = this._writableState;
+
+  if (state.corked) {
+    state.corked--;
+
+    if (!state.writing && !state.corked && !state.finished && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
+  }
+};
+
+Writable.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
+  // node::ParseEncoding() requires lower case.
+  if (typeof encoding === 'string') encoding = encoding.toLowerCase();
+  if (!(['hex', 'utf8', 'utf-8', 'ascii', 'binary', 'base64', 'ucs2', 'ucs-2', 'utf16le', 'utf-16le', 'raw'].indexOf((encoding + '').toLowerCase()) > -1)) throw new TypeError('Unknown encoding: ' + encoding);
+  this._writableState.defaultEncoding = encoding;
+  return this;
+};
+
+function decodeChunk(state, chunk, encoding) {
+  if (!state.objectMode && state.decodeStrings !== false && typeof chunk === 'string') {
+    chunk = Buffer.from(chunk, encoding);
+  }
+  return chunk;
+}
+
+// if we're already writing something, then just put this
+// in the queue, and wait our turn.  Otherwise, call _write
+// If we return false, then we need a drain event, so set that flag.
+function writeOrBuffer(stream, state, isBuf, chunk, encoding, cb) {
+  if (!isBuf) {
+    var newChunk = decodeChunk(state, chunk, encoding);
+    if (chunk !== newChunk) {
+      isBuf = true;
+      encoding = 'buffer';
+      chunk = newChunk;
+    }
+  }
+  var len = state.objectMode ? 1 : chunk.length;
+
+  state.length += len;
+
+  var ret = state.length < state.highWaterMark;
+  // we must ensure that previous needDrain will not be reset to false.
+  if (!ret) state.needDrain = true;
+
+  if (state.writing || state.corked) {
+    var last = state.lastBufferedRequest;
+    state.lastBufferedRequest = {
+      chunk: chunk,
+      encoding: encoding,
+      isBuf: isBuf,
+      callback: cb,
+      next: null
+    };
+    if (last) {
+      last.next = state.lastBufferedRequest;
+    } else {
+      state.bufferedRequest = state.lastBufferedRequest;
+    }
+    state.bufferedRequestCount += 1;
+  } else {
+    doWrite(stream, state, false, len, chunk, encoding, cb);
+  }
+
+  return ret;
+}
+
+function doWrite(stream, state, writev, len, chunk, encoding, cb) {
+  state.writelen = len;
+  state.writecb = cb;
+  state.writing = true;
+  state.sync = true;
+  if (writev) stream._writev(chunk, state.onwrite);else stream._write(chunk, encoding, state.onwrite);
+  state.sync = false;
+}
+
+function onwriteError(stream, state, sync, er, cb) {
+  --state.pendingcb;
+
+  if (sync) {
+    // defer the callback if we are being called synchronously
+    // to avoid piling up things on the stack
+    processNextTick(cb, er);
+    // this can emit finish, and it will always happen
+    // after error
+    processNextTick(finishMaybe, stream, state);
+    stream._writableState.errorEmitted = true;
+    stream.emit('error', er);
+  } else {
+    // the caller expect this to happen before if
+    // it is async
+    cb(er);
+    stream._writableState.errorEmitted = true;
+    stream.emit('error', er);
+    // this can emit finish, but finish must
+    // always follow error
+    finishMaybe(stream, state);
+  }
+}
+
+function onwriteStateUpdate(state) {
+  state.writing = false;
+  state.writecb = null;
+  state.length -= state.writelen;
+  state.writelen = 0;
+}
+
+function onwrite(stream, er) {
+  var state = stream._writableState;
+  var sync = state.sync;
+  var cb = state.writecb;
+
+  onwriteStateUpdate(state);
+
+  if (er) onwriteError(stream, state, sync, er, cb);else {
+    // Check if we're actually ready to finish, but don't emit yet
+    var finished = needFinish(state);
+
+    if (!finished && !state.corked && !state.bufferProcessing && state.bufferedRequest) {
+      clearBuffer(stream, state);
+    }
+
+    if (sync) {
+      /*<replacement>*/
+      asyncWrite(afterWrite, stream, state, finished, cb);
+      /*</replacement>*/
+    } else {
+      afterWrite(stream, state, finished, cb);
+    }
+  }
+}
+
+function afterWrite(stream, state, finished, cb) {
+  if (!finished) onwriteDrain(stream, state);
+  state.pendingcb--;
+  cb();
+  finishMaybe(stream, state);
+}
+
+// Must force callback to be called on nextTick, so that we don't
+// emit 'drain' before the write() consumer gets the 'false' return
+// value, and has a chance to attach a 'drain' listener.
+function onwriteDrain(stream, state) {
+  if (state.length === 0 && state.needDrain) {
+    state.needDrain = false;
+    stream.emit('drain');
+  }
+}
+
+// if there's something in the buffer waiting, then process it
+function clearBuffer(stream, state) {
+  state.bufferProcessing = true;
+  var entry = state.bufferedRequest;
+
+  if (stream._writev && entry && entry.next) {
+    // Fast case, write everything using _writev()
+    var l = state.bufferedRequestCount;
+    var buffer = new Array(l);
+    var holder = state.corkedRequestsFree;
+    holder.entry = entry;
+
+    var count = 0;
+    var allBuffers = true;
+    while (entry) {
+      buffer[count] = entry;
+      if (!entry.isBuf) allBuffers = false;
+      entry = entry.next;
+      count += 1;
+    }
+    buffer.allBuffers = allBuffers;
+
+    doWrite(stream, state, true, state.length, buffer, '', holder.finish);
+
+    // doWrite is almost always async, defer these to save a bit of time
+    // as the hot path ends with doWrite
+    state.pendingcb++;
+    state.lastBufferedRequest = null;
+    if (holder.next) {
+      state.corkedRequestsFree = holder.next;
+      holder.next = null;
+    } else {
+      state.corkedRequestsFree = new CorkedRequest(state);
+    }
+    state.bufferedRequestCount = 0;
+  } else {
+    // Slow case, write chunks one-by-one
+    while (entry) {
+      var chunk = entry.chunk;
+      var encoding = entry.encoding;
+      var cb = entry.callback;
+      var len = state.objectMode ? 1 : chunk.length;
+
+      doWrite(stream, state, false, len, chunk, encoding, cb);
+      entry = entry.next;
+      state.bufferedRequestCount--;
+      // if we didn't call the onwrite immediately, then
+      // it means that we need to wait until it does.
+      // also, that means that the chunk and cb are currently
+      // being processed, so move the buffer counter past them.
+      if (state.writing) {
+        break;
+      }
+    }
+
+    if (entry === null) state.lastBufferedRequest = null;
+  }
+
+  state.bufferedRequest = entry;
+  state.bufferProcessing = false;
+}
+
+Writable.prototype._write = function (chunk, encoding, cb) {
+  cb(new Error('_write() is not implemented'));
+};
+
+Writable.prototype._writev = null;
+
+Writable.prototype.end = function (chunk, encoding, cb) {
+  var state = this._writableState;
+
+  if (typeof chunk === 'function') {
+    cb = chunk;
+    chunk = null;
+    encoding = null;
+  } else if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = null;
+  }
+
+  if (chunk !== null && chunk !== undefined) this.write(chunk, encoding);
+
+  // .end() fully uncorks
+  if (state.corked) {
+    state.corked = 1;
+    this.uncork();
+  }
+
+  // ignore unnecessary end() calls.
+  if (!state.ending && !state.finished) endWritable(this, state, cb);
+};
+
+function needFinish(state) {
+  return state.ending && state.length === 0 && state.bufferedRequest === null && !state.finished && !state.writing;
+}
+function callFinal(stream, state) {
+  stream._final(function (err) {
+    state.pendingcb--;
+    if (err) {
+      stream.emit('error', err);
+    }
+    state.prefinished = true;
+    stream.emit('prefinish');
+    finishMaybe(stream, state);
+  });
+}
+function prefinish(stream, state) {
+  if (!state.prefinished && !state.finalCalled) {
+    if (typeof stream._final === 'function') {
+      state.pendingcb++;
+      state.finalCalled = true;
+      processNextTick(callFinal, stream, state);
+    } else {
+      state.prefinished = true;
+      stream.emit('prefinish');
+    }
+  }
+}
+
+function finishMaybe(stream, state) {
+  var need = needFinish(state);
+  if (need) {
+    prefinish(stream, state);
+    if (state.pendingcb === 0) {
+      state.finished = true;
+      stream.emit('finish');
+    }
+  }
+  return need;
+}
+
+function endWritable(stream, state, cb) {
+  state.ending = true;
+  finishMaybe(stream, state);
+  if (cb) {
+    if (state.finished) processNextTick(cb);else stream.once('finish', cb);
+  }
+  state.ended = true;
+  stream.writable = false;
+}
+
+function onCorkedFinish(corkReq, state, err) {
+  var entry = corkReq.entry;
+  corkReq.entry = null;
+  while (entry) {
+    var cb = entry.callback;
+    state.pendingcb--;
+    cb(err);
+    entry = entry.next;
+  }
+  if (state.corkedRequestsFree) {
+    state.corkedRequestsFree.next = corkReq;
+  } else {
+    state.corkedRequestsFree = corkReq;
+  }
+}
+
+Object.defineProperty(Writable.prototype, 'destroyed', {
+  get: function () {
+    if (this._writableState === undefined) {
+      return false;
+    }
+    return this._writableState.destroyed;
+  },
+  set: function (value) {
+    // we ignore the value if the stream
+    // has not been initialized yet
+    if (!this._writableState) {
+      return;
+    }
+
+    // backward compatibility, the user is explicitly
+    // managing destroyed
+    this._writableState.destroyed = value;
+  }
+});
+
+Writable.prototype.destroy = destroyImpl.destroy;
+Writable.prototype._undestroy = destroyImpl.undestroy;
+Writable.prototype._destroy = function (err, cb) {
+  this.end();
+  cb(err);
+};
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(48).setImmediate, __webpack_require__(1)))
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var Buffer = __webpack_require__(9).Buffer;
+
+var isEncoding = Buffer.isEncoding || function (encoding) {
+  encoding = '' + encoding;
+  switch (encoding && encoding.toLowerCase()) {
+    case 'hex':case 'utf8':case 'utf-8':case 'ascii':case 'binary':case 'base64':case 'ucs2':case 'ucs-2':case 'utf16le':case 'utf-16le':case 'raw':
+      return true;
+    default:
+      return false;
+  }
+};
+
+function _normalizeEncoding(enc) {
+  if (!enc) return 'utf8';
+  var retried;
+  while (true) {
+    switch (enc) {
+      case 'utf8':
+      case 'utf-8':
+        return 'utf8';
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return 'utf16le';
+      case 'latin1':
+      case 'binary':
+        return 'latin1';
+      case 'base64':
+      case 'ascii':
+      case 'hex':
+        return enc;
+      default:
+        if (retried) return; // undefined
+        enc = ('' + enc).toLowerCase();
+        retried = true;
+    }
+  }
+};
+
+// Do not cache `Buffer.isEncoding` when checking encoding names as some
+// modules monkey-patch it to support additional encodings
+function normalizeEncoding(enc) {
+  var nenc = _normalizeEncoding(enc);
+  if (typeof nenc !== 'string' && (Buffer.isEncoding === isEncoding || !isEncoding(enc))) throw new Error('Unknown encoding: ' + enc);
+  return nenc || enc;
+}
+
+// StringDecoder provides an interface for efficiently splitting a series of
+// buffers into a series of JS strings without breaking apart multi-byte
+// characters.
+exports.StringDecoder = StringDecoder;
+function StringDecoder(encoding) {
+  this.encoding = normalizeEncoding(encoding);
+  var nb;
+  switch (this.encoding) {
+    case 'utf16le':
+      this.text = utf16Text;
+      this.end = utf16End;
+      nb = 4;
+      break;
+    case 'utf8':
+      this.fillLast = utf8FillLast;
+      nb = 4;
+      break;
+    case 'base64':
+      this.text = base64Text;
+      this.end = base64End;
+      nb = 3;
+      break;
+    default:
+      this.write = simpleWrite;
+      this.end = simpleEnd;
+      return;
+  }
+  this.lastNeed = 0;
+  this.lastTotal = 0;
+  this.lastChar = Buffer.allocUnsafe(nb);
+}
+
+StringDecoder.prototype.write = function (buf) {
+  if (buf.length === 0) return '';
+  var r;
+  var i;
+  if (this.lastNeed) {
+    r = this.fillLast(buf);
+    if (r === undefined) return '';
+    i = this.lastNeed;
+    this.lastNeed = 0;
+  } else {
+    i = 0;
+  }
+  if (i < buf.length) return r ? r + this.text(buf, i) : this.text(buf, i);
+  return r || '';
+};
+
+StringDecoder.prototype.end = utf8End;
+
+// Returns only complete characters in a Buffer
+StringDecoder.prototype.text = utf8Text;
+
+// Attempts to complete a partial non-UTF-8 character using bytes from a Buffer
+StringDecoder.prototype.fillLast = function (buf) {
+  if (this.lastNeed <= buf.length) {
+    buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, this.lastNeed);
+    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
+  }
+  buf.copy(this.lastChar, this.lastTotal - this.lastNeed, 0, buf.length);
+  this.lastNeed -= buf.length;
+};
+
+// Checks the type of a UTF-8 byte, whether it's ASCII, a leading byte, or a
+// continuation byte.
+function utf8CheckByte(byte) {
+  if (byte <= 0x7F) return 0;else if (byte >> 5 === 0x06) return 2;else if (byte >> 4 === 0x0E) return 3;else if (byte >> 3 === 0x1E) return 4;
+  return -1;
+}
+
+// Checks at most 3 bytes at the end of a Buffer in order to detect an
+// incomplete multi-byte UTF-8 character. The total number of bytes (2, 3, or 4)
+// needed to complete the UTF-8 character (if applicable) are returned.
+function utf8CheckIncomplete(self, buf, i) {
+  var j = buf.length - 1;
+  if (j < i) return 0;
+  var nb = utf8CheckByte(buf[j]);
+  if (nb >= 0) {
+    if (nb > 0) self.lastNeed = nb - 1;
+    return nb;
+  }
+  if (--j < i) return 0;
+  nb = utf8CheckByte(buf[j]);
+  if (nb >= 0) {
+    if (nb > 0) self.lastNeed = nb - 2;
+    return nb;
+  }
+  if (--j < i) return 0;
+  nb = utf8CheckByte(buf[j]);
+  if (nb >= 0) {
+    if (nb > 0) {
+      if (nb === 2) nb = 0;else self.lastNeed = nb - 3;
+    }
+    return nb;
+  }
+  return 0;
+}
+
+// Validates as many continuation bytes for a multi-byte UTF-8 character as
+// needed or are available. If we see a non-continuation byte where we expect
+// one, we "replace" the validated continuation bytes we've seen so far with
+// UTF-8 replacement characters ('\ufffd'), to match v8's UTF-8 decoding
+// behavior. The continuation byte check is included three times in the case
+// where all of the continuation bytes for a character exist in the same buffer.
+// It is also done this way as a slight performance increase instead of using a
+// loop.
+function utf8CheckExtraBytes(self, buf, p) {
+  if ((buf[0] & 0xC0) !== 0x80) {
+    self.lastNeed = 0;
+    return '\ufffd'.repeat(p);
+  }
+  if (self.lastNeed > 1 && buf.length > 1) {
+    if ((buf[1] & 0xC0) !== 0x80) {
+      self.lastNeed = 1;
+      return '\ufffd'.repeat(p + 1);
+    }
+    if (self.lastNeed > 2 && buf.length > 2) {
+      if ((buf[2] & 0xC0) !== 0x80) {
+        self.lastNeed = 2;
+        return '\ufffd'.repeat(p + 2);
+      }
+    }
+  }
+}
+
+// Attempts to complete a multi-byte UTF-8 character using bytes from a Buffer.
+function utf8FillLast(buf) {
+  var p = this.lastTotal - this.lastNeed;
+  var r = utf8CheckExtraBytes(this, buf, p);
+  if (r !== undefined) return r;
+  if (this.lastNeed <= buf.length) {
+    buf.copy(this.lastChar, p, 0, this.lastNeed);
+    return this.lastChar.toString(this.encoding, 0, this.lastTotal);
+  }
+  buf.copy(this.lastChar, p, 0, buf.length);
+  this.lastNeed -= buf.length;
+}
+
+// Returns all complete UTF-8 characters in a Buffer. If the Buffer ended on a
+// partial character, the character's bytes are buffered until the required
+// number of bytes are available.
+function utf8Text(buf, i) {
+  var total = utf8CheckIncomplete(this, buf, i);
+  if (!this.lastNeed) return buf.toString('utf8', i);
+  this.lastTotal = total;
+  var end = buf.length - (total - this.lastNeed);
+  buf.copy(this.lastChar, 0, end);
+  return buf.toString('utf8', i, end);
+}
+
+// For UTF-8, a replacement character for each buffered byte of a (partial)
+// character needs to be added to the output.
+function utf8End(buf) {
+  var r = buf && buf.length ? this.write(buf) : '';
+  if (this.lastNeed) return r + '\ufffd'.repeat(this.lastTotal - this.lastNeed);
+  return r;
+}
+
+// UTF-16LE typically needs two bytes per character, but even if we have an even
+// number of bytes available, we need to check if we end on a leading/high
+// surrogate. In that case, we need to wait for the next two bytes in order to
+// decode the last character properly.
+function utf16Text(buf, i) {
+  if ((buf.length - i) % 2 === 0) {
+    var r = buf.toString('utf16le', i);
+    if (r) {
+      var c = r.charCodeAt(r.length - 1);
+      if (c >= 0xD800 && c <= 0xDBFF) {
+        this.lastNeed = 2;
+        this.lastTotal = 4;
+        this.lastChar[0] = buf[buf.length - 2];
+        this.lastChar[1] = buf[buf.length - 1];
+        return r.slice(0, -1);
+      }
+    }
+    return r;
+  }
+  this.lastNeed = 1;
+  this.lastTotal = 2;
+  this.lastChar[0] = buf[buf.length - 1];
+  return buf.toString('utf16le', i, buf.length - 1);
+}
+
+// For UTF-16LE we do not explicitly append special replacement characters if we
+// end on a partial character, we simply let v8 handle that.
+function utf16End(buf) {
+  var r = buf && buf.length ? this.write(buf) : '';
+  if (this.lastNeed) {
+    var end = this.lastTotal - this.lastNeed;
+    return r + this.lastChar.toString('utf16le', 0, end);
+  }
+  return r;
+}
+
+function base64Text(buf, i) {
+  var n = (buf.length - i) % 3;
+  if (n === 0) return buf.toString('base64', i);
+  this.lastNeed = 3 - n;
+  this.lastTotal = 3;
+  if (n === 1) {
+    this.lastChar[0] = buf[buf.length - 1];
+  } else {
+    this.lastChar[0] = buf[buf.length - 2];
+    this.lastChar[1] = buf[buf.length - 1];
+  }
+  return buf.toString('base64', i, buf.length - n);
+}
+
+function base64End(buf) {
+  var r = buf && buf.length ? this.write(buf) : '';
+  if (this.lastNeed) return r + this.lastChar.toString('base64', 0, 3 - this.lastNeed);
+  return r;
+}
+
+// Pass bytes on through for single-byte encodings (e.g. ascii, latin1, hex)
+function simpleWrite(buf) {
+  return buf.toString(this.encoding);
+}
+
+function simpleEnd(buf) {
+  return buf && buf.length ? this.write(buf) : '';
 }
 
 /***/ }),
-/* 5 */
+/* 14 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1113,7 +2918,7 @@ const sub = subtract;
 
 
 /***/ }),
-/* 6 */
+/* 15 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1953,7 +3758,7 @@ const forEach = (function() {
 
 
 /***/ }),
-/* 7 */
+/* 16 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -2615,700 +4420,3314 @@ const forEach = (function() {
 
 
 /***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = createFilteredVector
-
-var cubicHermite = __webpack_require__(37)
-var bsearch = __webpack_require__(9)
-
-function clamp(lo, hi, x) {
-  return Math.min(hi, Math.max(lo, x))
-}
-
-function FilteredVector(state0, velocity0, t0) {
-  this.dimension  = state0.length
-  this.bounds     = [ new Array(this.dimension), new Array(this.dimension) ]
-  for(var i=0; i<this.dimension; ++i) {
-    this.bounds[0][i] = -Infinity
-    this.bounds[1][i] = Infinity
-  }
-  this._state     = state0.slice().reverse()
-  this._velocity  = velocity0.slice().reverse()
-  this._time      = [ t0 ]
-  this._scratch   = [ state0.slice(), state0.slice(), state0.slice(), state0.slice(), state0.slice() ]
-}
-
-var proto = FilteredVector.prototype
-
-proto.flush = function(t) {
-  var idx = bsearch.gt(this._time, t) - 1
-  if(idx <= 0) {
-    return
-  }
-  this._time.splice(0, idx)
-  this._state.splice(0, idx * this.dimension)
-  this._velocity.splice(0, idx * this.dimension)
-}
-
-proto.curve = function(t) {
-  var time      = this._time
-  var n         = time.length
-  var idx       = bsearch.le(time, t)
-  var result    = this._scratch[0]
-  var state     = this._state
-  var velocity  = this._velocity
-  var d         = this.dimension
-  var bounds    = this.bounds
-  if(idx < 0) {
-    var ptr = d-1
-    for(var i=0; i<d; ++i, --ptr) {
-      result[i] = state[ptr]
-    }
-  } else if(idx >= n-1) {
-    var ptr = state.length-1
-    var tf = t - time[n-1]
-    for(var i=0; i<d; ++i, --ptr) {
-      result[i] = state[ptr] + tf * velocity[ptr]
-    }
-  } else {
-    var ptr = d * (idx+1) - 1
-    var t0  = time[idx]
-    var t1  = time[idx+1]
-    var dt  = (t1 - t0) || 1.0
-    var x0  = this._scratch[1]
-    var x1  = this._scratch[2]
-    var v0  = this._scratch[3]
-    var v1  = this._scratch[4]
-    var steady = true
-    for(var i=0; i<d; ++i, --ptr) {
-      x0[i] = state[ptr]
-      v0[i] = velocity[ptr] * dt
-      x1[i] = state[ptr+d]
-      v1[i] = velocity[ptr+d] * dt
-      steady = steady && (x0[i] === x1[i] && v0[i] === v1[i] && v0[i] === 0.0)
-    }
-    if(steady) {
-      for(var i=0; i<d; ++i) {
-        result[i] = x0[i]
-      }
-    } else {
-      cubicHermite(x0, v0, x1, v1, (t-t0)/dt, result)
-    }
-  }
-  var lo = bounds[0]
-  var hi = bounds[1]
-  for(var i=0; i<d; ++i) {
-    result[i] = clamp(lo[i], hi[i], result[i])
-  }
-  return result
-}
-
-proto.dcurve = function(t) {
-  var time     = this._time
-  var n        = time.length
-  var idx      = bsearch.le(time, t)
-  var result   = this._scratch[0]
-  var state    = this._state
-  var velocity = this._velocity
-  var d        = this.dimension
-  if(idx >= n-1) {
-    var ptr = state.length-1
-    var tf = t - time[n-1]
-    for(var i=0; i<d; ++i, --ptr) {
-      result[i] = velocity[ptr]
-    }
-  } else {
-    var ptr = d * (idx+1) - 1
-    var t0 = time[idx]
-    var t1 = time[idx+1]
-    var dt = (t1 - t0) || 1.0
-    var x0 = this._scratch[1]
-    var x1 = this._scratch[2]
-    var v0 = this._scratch[3]
-    var v1 = this._scratch[4]
-    var steady = true
-    for(var i=0; i<d; ++i, --ptr) {
-      x0[i] = state[ptr]
-      v0[i] = velocity[ptr] * dt
-      x1[i] = state[ptr+d]
-      v1[i] = velocity[ptr+d] * dt
-      steady = steady && (x0[i] === x1[i] && v0[i] === v1[i] && v0[i] === 0.0)
-    }
-    if(steady) {
-      for(var i=0; i<d; ++i) {
-        result[i] = 0.0
-      }
-    } else {
-      cubicHermite.derivative(x0, v0, x1, v1, (t-t0)/dt, result)
-      for(var i=0; i<d; ++i) {
-        result[i] /= dt
-      }
-    }
-  }
-  return result
-}
-
-proto.lastT = function() {
-  var time = this._time
-  return time[time.length-1]
-}
-
-proto.stable = function() {
-  var velocity = this._velocity
-  var ptr = velocity.length
-  for(var i=this.dimension-1; i>=0; --i) {
-    if(velocity[--ptr]) {
-      return false
-    }
-  }
-  return true
-}
-
-proto.jump = function(t) {
-  var t0 = this.lastT()
-  var d  = this.dimension
-  if(t < t0 || arguments.length !== d+1) {
-    return
-  }
-  var state     = this._state
-  var velocity  = this._velocity
-  var ptr       = state.length-this.dimension
-  var bounds    = this.bounds
-  var lo        = bounds[0]
-  var hi        = bounds[1]
-  this._time.push(t0, t)
-  for(var j=0; j<2; ++j) {
-    for(var i=0; i<d; ++i) {
-      state.push(state[ptr++])
-      velocity.push(0)
-    }
-  }
-  this._time.push(t)
-  for(var i=d; i>0; --i) {
-    state.push(clamp(lo[i-1], hi[i-1], arguments[i]))
-    velocity.push(0)
-  }
-}
-
-proto.push = function(t) {
-  var t0 = this.lastT()
-  var d  = this.dimension
-  if(t < t0 || arguments.length !== d+1) {
-    return
-  }
-  var state     = this._state
-  var velocity  = this._velocity
-  var ptr       = state.length-this.dimension
-  var dt        = t - t0
-  var bounds    = this.bounds
-  var lo        = bounds[0]
-  var hi        = bounds[1]
-  var sf        = (dt > 1e-6) ? 1/dt : 0
-  this._time.push(t)
-  for(var i=d; i>0; --i) {
-    var xc = clamp(lo[i-1], hi[i-1], arguments[i])
-    state.push(xc)
-    velocity.push((xc - state[ptr++]) * sf)
-  }
-}
-
-proto.set = function(t) {
-  var d = this.dimension
-  if(t < this.lastT() || arguments.length !== d+1) {
-    return
-  }
-  var state     = this._state
-  var velocity  = this._velocity
-  var bounds    = this.bounds
-  var lo        = bounds[0]
-  var hi        = bounds[1]
-  this._time.push(t)
-  for(var i=d; i>0; --i) {
-    state.push(clamp(lo[i-1], hi[i-1], arguments[i]))
-    velocity.push(0)
-  }
-}
-
-proto.move = function(t) {
-  var t0 = this.lastT()
-  var d  = this.dimension
-  if(t <= t0 || arguments.length !== d+1) {
-    return
-  }
-  var state    = this._state
-  var velocity = this._velocity
-  var statePtr = state.length - this.dimension
-  var bounds   = this.bounds
-  var lo       = bounds[0]
-  var hi       = bounds[1]
-  var dt       = t - t0
-  var sf       = (dt > 1e-6) ? 1/dt : 0.0
-  this._time.push(t)
-  for(var i=d; i>0; --i) {
-    var dx = arguments[i]
-    state.push(clamp(lo[i-1], hi[i-1], state[statePtr++] + dx))
-    velocity.push(dx * sf)
-  }
-}
-
-proto.idle = function(t) {
-  var t0 = this.lastT()
-  if(t < t0) {
-    return
-  }
-  var d        = this.dimension
-  var state    = this._state
-  var velocity = this._velocity
-  var statePtr = state.length-d
-  var bounds   = this.bounds
-  var lo       = bounds[0]
-  var hi       = bounds[1]
-  var dt       = t - t0
-  this._time.push(t)
-  for(var i=d-1; i>=0; --i) {
-    state.push(clamp(lo[i], hi[i], state[statePtr] + dt * velocity[statePtr]))
-    velocity.push(0)
-    statePtr += 1
-  }
-}
-
-function getZero(d) {
-  var result = new Array(d)
-  for(var i=0; i<d; ++i) {
-    result[i] = 0.0
-  }
-  return result
-}
-
-function createFilteredVector(initState, initVelocity, initTime) {
-  switch(arguments.length) {
-    case 0:
-      return new FilteredVector([0], [0], 0)
-    case 1:
-      if(typeof initState === 'number') {
-        var zero = getZero(initState)
-        return new FilteredVector(zero, zero, 0)
-      } else {
-        return new FilteredVector(initState, getZero(initState.length), 0)
-      }
-    case 2:
-      if(typeof initVelocity === 'number') {
-        var zero = getZero(initState.length)
-        return new FilteredVector(initState, zero, +initVelocity)
-      } else {
-        initTime = 0
-      }
-    case 3:
-      if(initState.length !== initVelocity.length) {
-        throw new Error('state and velocity lengths must match')
-      }
-      return new FilteredVector(initState, initVelocity, initTime)
-  }
-}
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function compileSearch(funcName, predicate, reversed, extraArgs, useNdarray, earlyOut) {
-  var code = [
-    "function ", funcName, "(a,l,h,", extraArgs.join(","),  "){",
-earlyOut ? "" : "var i=", (reversed ? "l-1" : "h+1"),
-";while(l<=h){\
-var m=(l+h)>>>1,x=a", useNdarray ? ".get(m)" : "[m]"]
-  if(earlyOut) {
-    if(predicate.indexOf("c") < 0) {
-      code.push(";if(x===y){return m}else if(x<=y){")
-    } else {
-      code.push(";var p=c(x,y);if(p===0){return m}else if(p<=0){")
-    }
-  } else {
-    code.push(";if(", predicate, "){i=m;")
-  }
-  if(reversed) {
-    code.push("l=m+1}else{h=m-1}")
-  } else {
-    code.push("h=m-1}else{l=m+1}")
-  }
-  code.push("}")
-  if(earlyOut) {
-    code.push("return -1};")
-  } else {
-    code.push("return i};")
-  }
-  return code.join("")
-}
-
-function compileBoundsSearch(predicate, reversed, suffix, earlyOut) {
-  var result = new Function([
-  compileSearch("A", "x" + predicate + "y", reversed, ["y"], false, earlyOut),
-  compileSearch("B", "x" + predicate + "y", reversed, ["y"], true, earlyOut),
-  compileSearch("P", "c(x,y)" + predicate + "0", reversed, ["y", "c"], false, earlyOut),
-  compileSearch("Q", "c(x,y)" + predicate + "0", reversed, ["y", "c"], true, earlyOut),
-"function dispatchBsearch", suffix, "(a,y,c,l,h){\
-if(a.shape){\
-if(typeof(c)==='function'){\
-return Q(a,(l===undefined)?0:l|0,(h===undefined)?a.shape[0]-1:h|0,y,c)\
-}else{\
-return B(a,(c===undefined)?0:c|0,(l===undefined)?a.shape[0]-1:l|0,y)\
-}}else{\
-if(typeof(c)==='function'){\
-return P(a,(l===undefined)?0:l|0,(h===undefined)?a.length-1:h|0,y,c)\
-}else{\
-return A(a,(c===undefined)?0:c|0,(l===undefined)?a.length-1:l|0,y)\
-}}}\
-return dispatchBsearch", suffix].join(""))
-  return result()
-}
-
-module.exports = {
-  ge: compileBoundsSearch(">=", false, "GE"),
-  gt: compileBoundsSearch(">", false, "GT"),
-  lt: compileBoundsSearch("<", true, "LT"),
-  le: compileBoundsSearch("<=", true, "LE"),
-  eq: compileBoundsSearch("-", true, "EQ", true)
-}
-
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports) {
-
-module.exports = cross;
-
-/**
- * Computes the cross product of two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-function cross(out, a, b) {
-    var ax = a[0], ay = a[1], az = a[2],
-        bx = b[0], by = b[1], bz = b[2]
-
-    out[0] = ay * bz - az * by
-    out[1] = az * bx - ax * bz
-    out[2] = ax * by - ay * bx
-    return out
-}
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports) {
-
-module.exports = dot;
-
-/**
- * Calculates the dot product of two vec3's
- *
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {Number} dot product of a and b
- */
-function dot(a, b) {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-}
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var identity = __webpack_require__(13);
-
-module.exports = lookAt;
-
-/**
- * Generates a look-at matrix with the given eye position, focal point, and up axis
- *
- * @param {mat4} out mat4 frustum matrix will be written into
- * @param {vec3} eye Position of the viewer
- * @param {vec3} center Point the viewer is looking at
- * @param {vec3} up vec3 pointing up
- * @returns {mat4} out
- */
-function lookAt(out, eye, center, up) {
-    var x0, x1, x2, y0, y1, y2, z0, z1, z2, len,
-        eyex = eye[0],
-        eyey = eye[1],
-        eyez = eye[2],
-        upx = up[0],
-        upy = up[1],
-        upz = up[2],
-        centerx = center[0],
-        centery = center[1],
-        centerz = center[2];
-
-    if (Math.abs(eyex - centerx) < 0.000001 &&
-        Math.abs(eyey - centery) < 0.000001 &&
-        Math.abs(eyez - centerz) < 0.000001) {
-        return identity(out);
-    }
-
-    z0 = eyex - centerx;
-    z1 = eyey - centery;
-    z2 = eyez - centerz;
-
-    len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
-    z0 *= len;
-    z1 *= len;
-    z2 *= len;
-
-    x0 = upy * z2 - upz * z1;
-    x1 = upz * z0 - upx * z2;
-    x2 = upx * z1 - upy * z0;
-    len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
-    if (!len) {
-        x0 = 0;
-        x1 = 0;
-        x2 = 0;
-    } else {
-        len = 1 / len;
-        x0 *= len;
-        x1 *= len;
-        x2 *= len;
-    }
-
-    y0 = z1 * x2 - z2 * x1;
-    y1 = z2 * x0 - z0 * x2;
-    y2 = z0 * x1 - z1 * x0;
-
-    len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
-    if (!len) {
-        y0 = 0;
-        y1 = 0;
-        y2 = 0;
-    } else {
-        len = 1 / len;
-        y0 *= len;
-        y1 *= len;
-        y2 *= len;
-    }
-
-    out[0] = x0;
-    out[1] = y0;
-    out[2] = z0;
-    out[3] = 0;
-    out[4] = x1;
-    out[5] = y1;
-    out[6] = z1;
-    out[7] = 0;
-    out[8] = x2;
-    out[9] = y2;
-    out[10] = z2;
-    out[11] = 0;
-    out[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
-    out[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
-    out[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
-    out[15] = 1;
-
-    return out;
-};
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports) {
-
-module.exports = identity;
-
-/**
- * Set a mat4 to the identity matrix
- *
- * @param {mat4} out the receiving matrix
- * @returns {mat4} out
- */
-function identity(out) {
-    out[0] = 1;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 0;
-    out[4] = 0;
-    out[5] = 1;
-    out[6] = 0;
-    out[7] = 0;
-    out[8] = 0;
-    out[9] = 0;
-    out[10] = 1;
-    out[11] = 0;
-    out[12] = 0;
-    out[13] = 0;
-    out[14] = 0;
-    out[15] = 1;
-    return out;
-};
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports) {
-
-module.exports = translate;
-
-/**
- * Translate a mat4 by the given vector
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to translate
- * @param {vec3} v vector to translate by
- * @returns {mat4} out
- */
-function translate(out, a, v) {
-    var x = v[0], y = v[1], z = v[2],
-        a00, a01, a02, a03,
-        a10, a11, a12, a13,
-        a20, a21, a22, a23;
-
-    if (a === out) {
-        out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
-        out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
-        out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
-        out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
-    } else {
-        a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
-        a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
-        a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
-
-        out[0] = a00; out[1] = a01; out[2] = a02; out[3] = a03;
-        out[4] = a10; out[5] = a11; out[6] = a12; out[7] = a13;
-        out[8] = a20; out[9] = a21; out[10] = a22; out[11] = a23;
-
-        out[12] = a00 * x + a10 * y + a20 * z + a[12];
-        out[13] = a01 * x + a11 * y + a21 * z + a[13];
-        out[14] = a02 * x + a12 * y + a22 * z + a[14];
-        out[15] = a03 * x + a13 * y + a23 * z + a[15];
-    }
-
-    return out;
-};
-
-/***/ }),
-/* 15 */
-/***/ (function(module, exports) {
-
-module.exports = create;
-
-/**
- * Creates a new identity mat4
- *
- * @returns {mat4} a new 4x4 matrix
- */
-function create() {
-    var out = new Float32Array(16);
-    out[0] = 1;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 0;
-    out[4] = 0;
-    out[5] = 1;
-    out[6] = 0;
-    out[7] = 0;
-    out[8] = 0;
-    out[9] = 0;
-    out[10] = 1;
-    out[11] = 0;
-    out[12] = 0;
-    out[13] = 0;
-    out[14] = 0;
-    out[15] = 1;
-    return out;
-};
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports) {
-
-module.exports = scale;
-
-/**
- * Scales the mat4 by the dimensions in the given vec3
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to scale
- * @param {vec3} v the vec3 to scale the matrix by
- * @returns {mat4} out
- **/
-function scale(out, a, v) {
-    var x = v[0], y = v[1], z = v[2];
-
-    out[0] = a[0] * x;
-    out[1] = a[1] * x;
-    out[2] = a[2] * x;
-    out[3] = a[3] * x;
-    out[4] = a[4] * y;
-    out[5] = a[5] * y;
-    out[6] = a[6] * y;
-    out[7] = a[7] * y;
-    out[8] = a[8] * z;
-    out[9] = a[9] * z;
-    out[10] = a[10] * z;
-    out[11] = a[11] * z;
-    out[12] = a[12];
-    out[13] = a[13];
-    out[14] = a[14];
-    out[15] = a[15];
-    return out;
-};
-
-/***/ }),
 /* 17 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-module.exports = determinant;
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-/**
- * Calculates the determinant of a mat4
- *
- * @param {mat4} a the source matrix
- * @returns {Number} determinant of a
- */
-function determinant(a) {
-    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
-        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
-        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
-        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15],
+module.exports = Stream;
 
-        b00 = a00 * a11 - a01 * a10,
-        b01 = a00 * a12 - a02 * a10,
-        b02 = a00 * a13 - a03 * a10,
-        b03 = a01 * a12 - a02 * a11,
-        b04 = a01 * a13 - a03 * a11,
-        b05 = a02 * a13 - a03 * a12,
-        b06 = a20 * a31 - a21 * a30,
-        b07 = a20 * a32 - a22 * a30,
-        b08 = a20 * a33 - a23 * a30,
-        b09 = a21 * a32 - a22 * a31,
-        b10 = a21 * a33 - a23 * a31,
-        b11 = a22 * a33 - a23 * a32;
+var EE = __webpack_require__(10).EventEmitter;
+var inherits = __webpack_require__(4);
 
-    // Calculate the determinant
-    return b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+inherits(Stream, EE);
+Stream.Readable = __webpack_require__(11);
+Stream.Writable = __webpack_require__(52);
+Stream.Duplex = __webpack_require__(53);
+Stream.Transform = __webpack_require__(54);
+Stream.PassThrough = __webpack_require__(55);
+
+// Backwards-compat with node 0.4.x
+Stream.Stream = Stream;
+
+
+
+// old-style streams.  Note that the pipe method (the only relevant
+// part of this class) is overridden in the Readable class.
+
+function Stream() {
+  EE.call(this);
+}
+
+Stream.prototype.pipe = function(dest, options) {
+  var source = this;
+
+  function ondata(chunk) {
+    if (dest.writable) {
+      if (false === dest.write(chunk) && source.pause) {
+        source.pause();
+      }
+    }
+  }
+
+  source.on('data', ondata);
+
+  function ondrain() {
+    if (source.readable && source.resume) {
+      source.resume();
+    }
+  }
+
+  dest.on('drain', ondrain);
+
+  // If the 'end' option is not supplied, dest.end() will be called when
+  // source gets the 'end' or 'close' events.  Only dest.end() once.
+  if (!dest._isStdio && (!options || options.end !== false)) {
+    source.on('end', onend);
+    source.on('close', onclose);
+  }
+
+  var didOnEnd = false;
+  function onend() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest.end();
+  }
+
+
+  function onclose() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    if (typeof dest.destroy === 'function') dest.destroy();
+  }
+
+  // don't leave dangling pipes when there are errors.
+  function onerror(er) {
+    cleanup();
+    if (EE.listenerCount(this, 'error') === 0) {
+      throw er; // Unhandled stream error in pipe.
+    }
+  }
+
+  source.on('error', onerror);
+  dest.on('error', onerror);
+
+  // remove all the event listeners that were added.
+  function cleanup() {
+    source.removeListener('data', ondata);
+    dest.removeListener('drain', ondrain);
+
+    source.removeListener('end', onend);
+    source.removeListener('close', onclose);
+
+    source.removeListener('error', onerror);
+    dest.removeListener('error', onerror);
+
+    source.removeListener('end', cleanup);
+    source.removeListener('close', cleanup);
+
+    dest.removeListener('close', cleanup);
+  }
+
+  source.on('end', cleanup);
+  source.on('close', cleanup);
+
+  dest.on('close', cleanup);
+
+  dest.emit('pipe', source);
+
+  // Allow for unix-like usage: A.pipe(B).pipe(C)
+  return dest;
 };
+
 
 /***/ }),
 /* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
+/*<replacement>*/
+
+var processNextTick = __webpack_require__(8).nextTick;
+/*</replacement>*/
+
+module.exports = Readable;
+
+/*<replacement>*/
+var isArray = __webpack_require__(19);
+/*</replacement>*/
+
+/*<replacement>*/
+var Duplex;
+/*</replacement>*/
+
+Readable.ReadableState = ReadableState;
+
+/*<replacement>*/
+var EE = __webpack_require__(10).EventEmitter;
+
+var EElistenerCount = function (emitter, type) {
+  return emitter.listeners(type).length;
+};
+/*</replacement>*/
+
+/*<replacement>*/
+var Stream = __webpack_require__(20);
+/*</replacement>*/
+
+/*<replacement>*/
+
+var Buffer = __webpack_require__(9).Buffer;
+var OurUint8Array = global.Uint8Array || function () {};
+function _uint8ArrayToBuffer(chunk) {
+  return Buffer.from(chunk);
+}
+function _isUint8Array(obj) {
+  return Buffer.isBuffer(obj) || obj instanceof OurUint8Array;
+}
+
+/*</replacement>*/
+
+/*<replacement>*/
+var util = __webpack_require__(7);
+util.inherits = __webpack_require__(4);
+/*</replacement>*/
+
+/*<replacement>*/
+var debugUtil = __webpack_require__(45);
+var debug = void 0;
+if (debugUtil && debugUtil.debuglog) {
+  debug = debugUtil.debuglog('stream');
+} else {
+  debug = function () {};
+}
+/*</replacement>*/
+
+var BufferList = __webpack_require__(46);
+var destroyImpl = __webpack_require__(22);
+var StringDecoder;
+
+util.inherits(Readable, Stream);
+
+var kProxyEvents = ['error', 'close', 'destroy', 'pause', 'resume'];
+
+function prependListener(emitter, event, fn) {
+  // Sadly this is not cacheable as some libraries bundle their own
+  // event emitter implementation with them.
+  if (typeof emitter.prependListener === 'function') return emitter.prependListener(event, fn);
+
+  // This is a hack to make sure that our error handler is attached before any
+  // userland ones.  NEVER DO THIS. This is here only because this code needs
+  // to continue to work with older versions of Node.js that do not include
+  // the prependListener() method. The goal is to eventually remove this hack.
+  if (!emitter._events || !emitter._events[event]) emitter.on(event, fn);else if (isArray(emitter._events[event])) emitter._events[event].unshift(fn);else emitter._events[event] = [fn, emitter._events[event]];
+}
+
+function ReadableState(options, stream) {
+  Duplex = Duplex || __webpack_require__(2);
+
+  options = options || {};
+
+  // Duplex streams are both readable and writable, but share
+  // the same options object.
+  // However, some cases require setting options to different
+  // values for the readable and the writable sides of the duplex stream.
+  // These options can be provided separately as readableXXX and writableXXX.
+  var isDuplex = stream instanceof Duplex;
+
+  // object stream flag. Used to make read(n) ignore n and to
+  // make all the buffer merging and length checks go away
+  this.objectMode = !!options.objectMode;
+
+  if (isDuplex) this.objectMode = this.objectMode || !!options.readableObjectMode;
+
+  // the point at which it stops calling _read() to fill the buffer
+  // Note: 0 is a valid value, means "don't call _read preemptively ever"
+  var hwm = options.highWaterMark;
+  var readableHwm = options.readableHighWaterMark;
+  var defaultHwm = this.objectMode ? 16 : 16 * 1024;
+
+  if (hwm || hwm === 0) this.highWaterMark = hwm;else if (isDuplex && (readableHwm || readableHwm === 0)) this.highWaterMark = readableHwm;else this.highWaterMark = defaultHwm;
+
+  // cast to ints.
+  this.highWaterMark = Math.floor(this.highWaterMark);
+
+  // A linked list is used to store data chunks instead of an array because the
+  // linked list can remove elements from the beginning faster than
+  // array.shift()
+  this.buffer = new BufferList();
+  this.length = 0;
+  this.pipes = null;
+  this.pipesCount = 0;
+  this.flowing = null;
+  this.ended = false;
+  this.endEmitted = false;
+  this.reading = false;
+
+  // a flag to be able to tell if the event 'readable'/'data' is emitted
+  // immediately, or on a later tick.  We set this to true at first, because
+  // any actions that shouldn't happen until "later" should generally also
+  // not happen before the first read call.
+  this.sync = true;
+
+  // whenever we return null, then we set a flag to say
+  // that we're awaiting a 'readable' event emission.
+  this.needReadable = false;
+  this.emittedReadable = false;
+  this.readableListening = false;
+  this.resumeScheduled = false;
+
+  // has it been destroyed
+  this.destroyed = false;
+
+  // Crypto is kind of old and crusty.  Historically, its default string
+  // encoding is 'binary' so we have to make this configurable.
+  // Everything else in the universe uses 'utf8', though.
+  this.defaultEncoding = options.defaultEncoding || 'utf8';
+
+  // the number of writers that are awaiting a drain event in .pipe()s
+  this.awaitDrain = 0;
+
+  // if true, a maybeReadMore has been scheduled
+  this.readingMore = false;
+
+  this.decoder = null;
+  this.encoding = null;
+  if (options.encoding) {
+    if (!StringDecoder) StringDecoder = __webpack_require__(13).StringDecoder;
+    this.decoder = new StringDecoder(options.encoding);
+    this.encoding = options.encoding;
+  }
+}
+
+function Readable(options) {
+  Duplex = Duplex || __webpack_require__(2);
+
+  if (!(this instanceof Readable)) return new Readable(options);
+
+  this._readableState = new ReadableState(options, this);
+
+  // legacy
+  this.readable = true;
+
+  if (options) {
+    if (typeof options.read === 'function') this._read = options.read;
+
+    if (typeof options.destroy === 'function') this._destroy = options.destroy;
+  }
+
+  Stream.call(this);
+}
+
+Object.defineProperty(Readable.prototype, 'destroyed', {
+  get: function () {
+    if (this._readableState === undefined) {
+      return false;
+    }
+    return this._readableState.destroyed;
+  },
+  set: function (value) {
+    // we ignore the value if the stream
+    // has not been initialized yet
+    if (!this._readableState) {
+      return;
+    }
+
+    // backward compatibility, the user is explicitly
+    // managing destroyed
+    this._readableState.destroyed = value;
+  }
+});
+
+Readable.prototype.destroy = destroyImpl.destroy;
+Readable.prototype._undestroy = destroyImpl.undestroy;
+Readable.prototype._destroy = function (err, cb) {
+  this.push(null);
+  cb(err);
+};
+
+// Manually shove something into the read() buffer.
+// This returns true if the highWaterMark has not been hit yet,
+// similar to how Writable.write() returns true if you should
+// write() some more.
+Readable.prototype.push = function (chunk, encoding) {
+  var state = this._readableState;
+  var skipChunkCheck;
+
+  if (!state.objectMode) {
+    if (typeof chunk === 'string') {
+      encoding = encoding || state.defaultEncoding;
+      if (encoding !== state.encoding) {
+        chunk = Buffer.from(chunk, encoding);
+        encoding = '';
+      }
+      skipChunkCheck = true;
+    }
+  } else {
+    skipChunkCheck = true;
+  }
+
+  return readableAddChunk(this, chunk, encoding, false, skipChunkCheck);
+};
+
+// Unshift should *always* be something directly out of read()
+Readable.prototype.unshift = function (chunk) {
+  return readableAddChunk(this, chunk, null, true, false);
+};
+
+function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
+  var state = stream._readableState;
+  if (chunk === null) {
+    state.reading = false;
+    onEofChunk(stream, state);
+  } else {
+    var er;
+    if (!skipChunkCheck) er = chunkInvalid(state, chunk);
+    if (er) {
+      stream.emit('error', er);
+    } else if (state.objectMode || chunk && chunk.length > 0) {
+      if (typeof chunk !== 'string' && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer.prototype) {
+        chunk = _uint8ArrayToBuffer(chunk);
+      }
+
+      if (addToFront) {
+        if (state.endEmitted) stream.emit('error', new Error('stream.unshift() after end event'));else addChunk(stream, state, chunk, true);
+      } else if (state.ended) {
+        stream.emit('error', new Error('stream.push() after EOF'));
+      } else {
+        state.reading = false;
+        if (state.decoder && !encoding) {
+          chunk = state.decoder.write(chunk);
+          if (state.objectMode || chunk.length !== 0) addChunk(stream, state, chunk, false);else maybeReadMore(stream, state);
+        } else {
+          addChunk(stream, state, chunk, false);
+        }
+      }
+    } else if (!addToFront) {
+      state.reading = false;
+    }
+  }
+
+  return needMoreData(state);
+}
+
+function addChunk(stream, state, chunk, addToFront) {
+  if (state.flowing && state.length === 0 && !state.sync) {
+    stream.emit('data', chunk);
+    stream.read(0);
+  } else {
+    // update the buffer info.
+    state.length += state.objectMode ? 1 : chunk.length;
+    if (addToFront) state.buffer.unshift(chunk);else state.buffer.push(chunk);
+
+    if (state.needReadable) emitReadable(stream);
+  }
+  maybeReadMore(stream, state);
+}
+
+function chunkInvalid(state, chunk) {
+  var er;
+  if (!_isUint8Array(chunk) && typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
+    er = new TypeError('Invalid non-string/buffer chunk');
+  }
+  return er;
+}
+
+// if it's past the high water mark, we can push in some more.
+// Also, if we have no data yet, we can stand some
+// more bytes.  This is to work around cases where hwm=0,
+// such as the repl.  Also, if the push() triggered a
+// readable event, and the user called read(largeNumber) such that
+// needReadable was set, then we ought to push more, so that another
+// 'readable' event will be triggered.
+function needMoreData(state) {
+  return !state.ended && (state.needReadable || state.length < state.highWaterMark || state.length === 0);
+}
+
+Readable.prototype.isPaused = function () {
+  return this._readableState.flowing === false;
+};
+
+// backwards compatibility.
+Readable.prototype.setEncoding = function (enc) {
+  if (!StringDecoder) StringDecoder = __webpack_require__(13).StringDecoder;
+  this._readableState.decoder = new StringDecoder(enc);
+  this._readableState.encoding = enc;
+  return this;
+};
+
+// Don't raise the hwm > 8MB
+var MAX_HWM = 0x800000;
+function computeNewHighWaterMark(n) {
+  if (n >= MAX_HWM) {
+    n = MAX_HWM;
+  } else {
+    // Get the next highest power of 2 to prevent increasing hwm excessively in
+    // tiny amounts
+    n--;
+    n |= n >>> 1;
+    n |= n >>> 2;
+    n |= n >>> 4;
+    n |= n >>> 8;
+    n |= n >>> 16;
+    n++;
+  }
+  return n;
+}
+
+// This function is designed to be inlinable, so please take care when making
+// changes to the function body.
+function howMuchToRead(n, state) {
+  if (n <= 0 || state.length === 0 && state.ended) return 0;
+  if (state.objectMode) return 1;
+  if (n !== n) {
+    // Only flow one buffer at a time
+    if (state.flowing && state.length) return state.buffer.head.data.length;else return state.length;
+  }
+  // If we're asking for more than the current hwm, then raise the hwm.
+  if (n > state.highWaterMark) state.highWaterMark = computeNewHighWaterMark(n);
+  if (n <= state.length) return n;
+  // Don't have enough
+  if (!state.ended) {
+    state.needReadable = true;
+    return 0;
+  }
+  return state.length;
+}
+
+// you can override either this method, or the async _read(n) below.
+Readable.prototype.read = function (n) {
+  debug('read', n);
+  n = parseInt(n, 10);
+  var state = this._readableState;
+  var nOrig = n;
+
+  if (n !== 0) state.emittedReadable = false;
+
+  // if we're doing read(0) to trigger a readable event, but we
+  // already have a bunch of data in the buffer, then just trigger
+  // the 'readable' event and move on.
+  if (n === 0 && state.needReadable && (state.length >= state.highWaterMark || state.ended)) {
+    debug('read: emitReadable', state.length, state.ended);
+    if (state.length === 0 && state.ended) endReadable(this);else emitReadable(this);
+    return null;
+  }
+
+  n = howMuchToRead(n, state);
+
+  // if we've ended, and we're now clear, then finish it up.
+  if (n === 0 && state.ended) {
+    if (state.length === 0) endReadable(this);
+    return null;
+  }
+
+  // All the actual chunk generation logic needs to be
+  // *below* the call to _read.  The reason is that in certain
+  // synthetic stream cases, such as passthrough streams, _read
+  // may be a completely synchronous operation which may change
+  // the state of the read buffer, providing enough data when
+  // before there was *not* enough.
+  //
+  // So, the steps are:
+  // 1. Figure out what the state of things will be after we do
+  // a read from the buffer.
+  //
+  // 2. If that resulting state will trigger a _read, then call _read.
+  // Note that this may be asynchronous, or synchronous.  Yes, it is
+  // deeply ugly to write APIs this way, but that still doesn't mean
+  // that the Readable class should behave improperly, as streams are
+  // designed to be sync/async agnostic.
+  // Take note if the _read call is sync or async (ie, if the read call
+  // has returned yet), so that we know whether or not it's safe to emit
+  // 'readable' etc.
+  //
+  // 3. Actually pull the requested chunks out of the buffer and return.
+
+  // if we need a readable event, then we need to do some reading.
+  var doRead = state.needReadable;
+  debug('need readable', doRead);
+
+  // if we currently have less than the highWaterMark, then also read some
+  if (state.length === 0 || state.length - n < state.highWaterMark) {
+    doRead = true;
+    debug('length less than watermark', doRead);
+  }
+
+  // however, if we've ended, then there's no point, and if we're already
+  // reading, then it's unnecessary.
+  if (state.ended || state.reading) {
+    doRead = false;
+    debug('reading or ended', doRead);
+  } else if (doRead) {
+    debug('do read');
+    state.reading = true;
+    state.sync = true;
+    // if the length is currently zero, then we *need* a readable event.
+    if (state.length === 0) state.needReadable = true;
+    // call internal read method
+    this._read(state.highWaterMark);
+    state.sync = false;
+    // If _read pushed data synchronously, then `reading` will be false,
+    // and we need to re-evaluate how much data we can return to the user.
+    if (!state.reading) n = howMuchToRead(nOrig, state);
+  }
+
+  var ret;
+  if (n > 0) ret = fromList(n, state);else ret = null;
+
+  if (ret === null) {
+    state.needReadable = true;
+    n = 0;
+  } else {
+    state.length -= n;
+  }
+
+  if (state.length === 0) {
+    // If we have nothing in the buffer, then we want to know
+    // as soon as we *do* get something into the buffer.
+    if (!state.ended) state.needReadable = true;
+
+    // If we tried to read() past the EOF, then emit end on the next tick.
+    if (nOrig !== n && state.ended) endReadable(this);
+  }
+
+  if (ret !== null) this.emit('data', ret);
+
+  return ret;
+};
+
+function onEofChunk(stream, state) {
+  if (state.ended) return;
+  if (state.decoder) {
+    var chunk = state.decoder.end();
+    if (chunk && chunk.length) {
+      state.buffer.push(chunk);
+      state.length += state.objectMode ? 1 : chunk.length;
+    }
+  }
+  state.ended = true;
+
+  // emit 'readable' now to make sure it gets picked up.
+  emitReadable(stream);
+}
+
+// Don't emit readable right away in sync mode, because this can trigger
+// another read() call => stack overflow.  This way, it might trigger
+// a nextTick recursion warning, but that's not so bad.
+function emitReadable(stream) {
+  var state = stream._readableState;
+  state.needReadable = false;
+  if (!state.emittedReadable) {
+    debug('emitReadable', state.flowing);
+    state.emittedReadable = true;
+    if (state.sync) processNextTick(emitReadable_, stream);else emitReadable_(stream);
+  }
+}
+
+function emitReadable_(stream) {
+  debug('emit readable');
+  stream.emit('readable');
+  flow(stream);
+}
+
+// at this point, the user has presumably seen the 'readable' event,
+// and called read() to consume some data.  that may have triggered
+// in turn another _read(n) call, in which case reading = true if
+// it's in progress.
+// However, if we're not ended, or reading, and the length < hwm,
+// then go ahead and try to read some more preemptively.
+function maybeReadMore(stream, state) {
+  if (!state.readingMore) {
+    state.readingMore = true;
+    processNextTick(maybeReadMore_, stream, state);
+  }
+}
+
+function maybeReadMore_(stream, state) {
+  var len = state.length;
+  while (!state.reading && !state.flowing && !state.ended && state.length < state.highWaterMark) {
+    debug('maybeReadMore read 0');
+    stream.read(0);
+    if (len === state.length)
+      // didn't get any data, stop spinning.
+      break;else len = state.length;
+  }
+  state.readingMore = false;
+}
+
+// abstract method.  to be overridden in specific implementation classes.
+// call cb(er, data) where data is <= n in length.
+// for virtual (non-string, non-buffer) streams, "length" is somewhat
+// arbitrary, and perhaps not very meaningful.
+Readable.prototype._read = function (n) {
+  this.emit('error', new Error('_read() is not implemented'));
+};
+
+Readable.prototype.pipe = function (dest, pipeOpts) {
+  var src = this;
+  var state = this._readableState;
+
+  switch (state.pipesCount) {
+    case 0:
+      state.pipes = dest;
+      break;
+    case 1:
+      state.pipes = [state.pipes, dest];
+      break;
+    default:
+      state.pipes.push(dest);
+      break;
+  }
+  state.pipesCount += 1;
+  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts);
+
+  var doEnd = (!pipeOpts || pipeOpts.end !== false) && dest !== process.stdout && dest !== process.stderr;
+
+  var endFn = doEnd ? onend : unpipe;
+  if (state.endEmitted) processNextTick(endFn);else src.once('end', endFn);
+
+  dest.on('unpipe', onunpipe);
+  function onunpipe(readable, unpipeInfo) {
+    debug('onunpipe');
+    if (readable === src) {
+      if (unpipeInfo && unpipeInfo.hasUnpiped === false) {
+        unpipeInfo.hasUnpiped = true;
+        cleanup();
+      }
+    }
+  }
+
+  function onend() {
+    debug('onend');
+    dest.end();
+  }
+
+  // when the dest drains, it reduces the awaitDrain counter
+  // on the source.  This would be more elegant with a .once()
+  // handler in flow(), but adding and removing repeatedly is
+  // too slow.
+  var ondrain = pipeOnDrain(src);
+  dest.on('drain', ondrain);
+
+  var cleanedUp = false;
+  function cleanup() {
+    debug('cleanup');
+    // cleanup event handlers once the pipe is broken
+    dest.removeListener('close', onclose);
+    dest.removeListener('finish', onfinish);
+    dest.removeListener('drain', ondrain);
+    dest.removeListener('error', onerror);
+    dest.removeListener('unpipe', onunpipe);
+    src.removeListener('end', onend);
+    src.removeListener('end', unpipe);
+    src.removeListener('data', ondata);
+
+    cleanedUp = true;
+
+    // if the reader is waiting for a drain event from this
+    // specific writer, then it would cause it to never start
+    // flowing again.
+    // So, if this is awaiting a drain, then we just call it now.
+    // If we don't know, then assume that we are waiting for one.
+    if (state.awaitDrain && (!dest._writableState || dest._writableState.needDrain)) ondrain();
+  }
+
+  // If the user pushes more data while we're writing to dest then we'll end up
+  // in ondata again. However, we only want to increase awaitDrain once because
+  // dest will only emit one 'drain' event for the multiple writes.
+  // => Introduce a guard on increasing awaitDrain.
+  var increasedAwaitDrain = false;
+  src.on('data', ondata);
+  function ondata(chunk) {
+    debug('ondata');
+    increasedAwaitDrain = false;
+    var ret = dest.write(chunk);
+    if (false === ret && !increasedAwaitDrain) {
+      // If the user unpiped during `dest.write()`, it is possible
+      // to get stuck in a permanently paused state if that write
+      // also returned false.
+      // => Check whether `dest` is still a piping destination.
+      if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
+        debug('false write response, pause', src._readableState.awaitDrain);
+        src._readableState.awaitDrain++;
+        increasedAwaitDrain = true;
+      }
+      src.pause();
+    }
+  }
+
+  // if the dest has an error, then stop piping into it.
+  // however, don't suppress the throwing behavior for this.
+  function onerror(er) {
+    debug('onerror', er);
+    unpipe();
+    dest.removeListener('error', onerror);
+    if (EElistenerCount(dest, 'error') === 0) dest.emit('error', er);
+  }
+
+  // Make sure our error handler is attached before userland ones.
+  prependListener(dest, 'error', onerror);
+
+  // Both close and finish should trigger unpipe, but only once.
+  function onclose() {
+    dest.removeListener('finish', onfinish);
+    unpipe();
+  }
+  dest.once('close', onclose);
+  function onfinish() {
+    debug('onfinish');
+    dest.removeListener('close', onclose);
+    unpipe();
+  }
+  dest.once('finish', onfinish);
+
+  function unpipe() {
+    debug('unpipe');
+    src.unpipe(dest);
+  }
+
+  // tell the dest that it's being piped to
+  dest.emit('pipe', src);
+
+  // start the flow if it hasn't been started already.
+  if (!state.flowing) {
+    debug('pipe resume');
+    src.resume();
+  }
+
+  return dest;
+};
+
+function pipeOnDrain(src) {
+  return function () {
+    var state = src._readableState;
+    debug('pipeOnDrain', state.awaitDrain);
+    if (state.awaitDrain) state.awaitDrain--;
+    if (state.awaitDrain === 0 && EElistenerCount(src, 'data')) {
+      state.flowing = true;
+      flow(src);
+    }
+  };
+}
+
+Readable.prototype.unpipe = function (dest) {
+  var state = this._readableState;
+  var unpipeInfo = { hasUnpiped: false };
+
+  // if we're not piping anywhere, then do nothing.
+  if (state.pipesCount === 0) return this;
+
+  // just one destination.  most common case.
+  if (state.pipesCount === 1) {
+    // passed in one, but it's not the right one.
+    if (dest && dest !== state.pipes) return this;
+
+    if (!dest) dest = state.pipes;
+
+    // got a match.
+    state.pipes = null;
+    state.pipesCount = 0;
+    state.flowing = false;
+    if (dest) dest.emit('unpipe', this, unpipeInfo);
+    return this;
+  }
+
+  // slow case. multiple pipe destinations.
+
+  if (!dest) {
+    // remove all.
+    var dests = state.pipes;
+    var len = state.pipesCount;
+    state.pipes = null;
+    state.pipesCount = 0;
+    state.flowing = false;
+
+    for (var i = 0; i < len; i++) {
+      dests[i].emit('unpipe', this, unpipeInfo);
+    }return this;
+  }
+
+  // try to find the right one.
+  var index = indexOf(state.pipes, dest);
+  if (index === -1) return this;
+
+  state.pipes.splice(index, 1);
+  state.pipesCount -= 1;
+  if (state.pipesCount === 1) state.pipes = state.pipes[0];
+
+  dest.emit('unpipe', this, unpipeInfo);
+
+  return this;
+};
+
+// set up data events if they are asked for
+// Ensure readable listeners eventually get something
+Readable.prototype.on = function (ev, fn) {
+  var res = Stream.prototype.on.call(this, ev, fn);
+
+  if (ev === 'data') {
+    // Start flowing on next tick if stream isn't explicitly paused
+    if (this._readableState.flowing !== false) this.resume();
+  } else if (ev === 'readable') {
+    var state = this._readableState;
+    if (!state.endEmitted && !state.readableListening) {
+      state.readableListening = state.needReadable = true;
+      state.emittedReadable = false;
+      if (!state.reading) {
+        processNextTick(nReadingNextTick, this);
+      } else if (state.length) {
+        emitReadable(this);
+      }
+    }
+  }
+
+  return res;
+};
+Readable.prototype.addListener = Readable.prototype.on;
+
+function nReadingNextTick(self) {
+  debug('readable nexttick read 0');
+  self.read(0);
+}
+
+// pause() and resume() are remnants of the legacy readable stream API
+// If the user uses them, then switch into old mode.
+Readable.prototype.resume = function () {
+  var state = this._readableState;
+  if (!state.flowing) {
+    debug('resume');
+    state.flowing = true;
+    resume(this, state);
+  }
+  return this;
+};
+
+function resume(stream, state) {
+  if (!state.resumeScheduled) {
+    state.resumeScheduled = true;
+    processNextTick(resume_, stream, state);
+  }
+}
+
+function resume_(stream, state) {
+  if (!state.reading) {
+    debug('resume read 0');
+    stream.read(0);
+  }
+
+  state.resumeScheduled = false;
+  state.awaitDrain = 0;
+  stream.emit('resume');
+  flow(stream);
+  if (state.flowing && !state.reading) stream.read(0);
+}
+
+Readable.prototype.pause = function () {
+  debug('call pause flowing=%j', this._readableState.flowing);
+  if (false !== this._readableState.flowing) {
+    debug('pause');
+    this._readableState.flowing = false;
+    this.emit('pause');
+  }
+  return this;
+};
+
+function flow(stream) {
+  var state = stream._readableState;
+  debug('flow', state.flowing);
+  while (state.flowing && stream.read() !== null) {}
+}
+
+// wrap an old-style stream as the async data source.
+// This is *not* part of the readable stream interface.
+// It is an ugly unfortunate mess of history.
+Readable.prototype.wrap = function (stream) {
+  var _this = this;
+
+  var state = this._readableState;
+  var paused = false;
+
+  stream.on('end', function () {
+    debug('wrapped end');
+    if (state.decoder && !state.ended) {
+      var chunk = state.decoder.end();
+      if (chunk && chunk.length) _this.push(chunk);
+    }
+
+    _this.push(null);
+  });
+
+  stream.on('data', function (chunk) {
+    debug('wrapped data');
+    if (state.decoder) chunk = state.decoder.write(chunk);
+
+    // don't skip over falsy values in objectMode
+    if (state.objectMode && (chunk === null || chunk === undefined)) return;else if (!state.objectMode && (!chunk || !chunk.length)) return;
+
+    var ret = _this.push(chunk);
+    if (!ret) {
+      paused = true;
+      stream.pause();
+    }
+  });
+
+  // proxy all the other methods.
+  // important when wrapping filters and duplexes.
+  for (var i in stream) {
+    if (this[i] === undefined && typeof stream[i] === 'function') {
+      this[i] = function (method) {
+        return function () {
+          return stream[method].apply(stream, arguments);
+        };
+      }(i);
+    }
+  }
+
+  // proxy certain important events.
+  for (var n = 0; n < kProxyEvents.length; n++) {
+    stream.on(kProxyEvents[n], this.emit.bind(this, kProxyEvents[n]));
+  }
+
+  // when we try to consume some more bytes, simply unpause the
+  // underlying stream.
+  this._read = function (n) {
+    debug('wrapped _read', n);
+    if (paused) {
+      paused = false;
+      stream.resume();
+    }
+  };
+
+  return this;
+};
+
+// exposed for testing purposes only.
+Readable._fromList = fromList;
+
+// Pluck off n bytes from an array of buffers.
+// Length is the combined lengths of all the buffers in the list.
+// This function is designed to be inlinable, so please take care when making
+// changes to the function body.
+function fromList(n, state) {
+  // nothing buffered
+  if (state.length === 0) return null;
+
+  var ret;
+  if (state.objectMode) ret = state.buffer.shift();else if (!n || n >= state.length) {
+    // read it all, truncate the list
+    if (state.decoder) ret = state.buffer.join('');else if (state.buffer.length === 1) ret = state.buffer.head.data;else ret = state.buffer.concat(state.length);
+    state.buffer.clear();
+  } else {
+    // read part of list
+    ret = fromListPartial(n, state.buffer, state.decoder);
+  }
+
+  return ret;
+}
+
+// Extracts only enough buffered data to satisfy the amount requested.
+// This function is designed to be inlinable, so please take care when making
+// changes to the function body.
+function fromListPartial(n, list, hasStrings) {
+  var ret;
+  if (n < list.head.data.length) {
+    // slice is the same for buffers and strings
+    ret = list.head.data.slice(0, n);
+    list.head.data = list.head.data.slice(n);
+  } else if (n === list.head.data.length) {
+    // first chunk is a perfect match
+    ret = list.shift();
+  } else {
+    // result spans more than one buffer
+    ret = hasStrings ? copyFromBufferString(n, list) : copyFromBuffer(n, list);
+  }
+  return ret;
+}
+
+// Copies a specified amount of characters from the list of buffered data
+// chunks.
+// This function is designed to be inlinable, so please take care when making
+// changes to the function body.
+function copyFromBufferString(n, list) {
+  var p = list.head;
+  var c = 1;
+  var ret = p.data;
+  n -= ret.length;
+  while (p = p.next) {
+    var str = p.data;
+    var nb = n > str.length ? str.length : n;
+    if (nb === str.length) ret += str;else ret += str.slice(0, n);
+    n -= nb;
+    if (n === 0) {
+      if (nb === str.length) {
+        ++c;
+        if (p.next) list.head = p.next;else list.head = list.tail = null;
+      } else {
+        list.head = p;
+        p.data = str.slice(nb);
+      }
+      break;
+    }
+    ++c;
+  }
+  list.length -= c;
+  return ret;
+}
+
+// Copies a specified amount of bytes from the list of buffered data chunks.
+// This function is designed to be inlinable, so please take care when making
+// changes to the function body.
+function copyFromBuffer(n, list) {
+  var ret = Buffer.allocUnsafe(n);
+  var p = list.head;
+  var c = 1;
+  p.data.copy(ret);
+  n -= p.data.length;
+  while (p = p.next) {
+    var buf = p.data;
+    var nb = n > buf.length ? buf.length : n;
+    buf.copy(ret, ret.length - n, 0, nb);
+    n -= nb;
+    if (n === 0) {
+      if (nb === buf.length) {
+        ++c;
+        if (p.next) list.head = p.next;else list.head = list.tail = null;
+      } else {
+        list.head = p;
+        p.data = buf.slice(nb);
+      }
+      break;
+    }
+    ++c;
+  }
+  list.length -= c;
+  return ret;
+}
+
+function endReadable(stream) {
+  var state = stream._readableState;
+
+  // If we get here before consuming all the bytes, then that is a
+  // bug in node.  Should never happen.
+  if (state.length > 0) throw new Error('"endReadable()" called on non-empty stream');
+
+  if (!state.endEmitted) {
+    state.ended = true;
+    processNextTick(endReadableNT, state, stream);
+  }
+}
+
+function endReadableNT(state, stream) {
+  // Check that we didn't get one last unshift.
+  if (!state.endEmitted && state.length === 0) {
+    state.endEmitted = true;
+    stream.readable = false;
+    stream.emit('end');
+  }
+}
+
+function forEach(xs, f) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    f(xs[i], i);
+  }
+}
+
+function indexOf(xs, x) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    if (xs[i] === x) return i;
+  }
+  return -1;
+}
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1), __webpack_require__(6)))
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports) {
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+
+/***/ }),
+/* 20 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(10).EventEmitter;
+
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global) {/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+
+
+var base64 = __webpack_require__(43)
+var ieee754 = __webpack_require__(44)
+var isArray = __webpack_require__(19)
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Due to various browser bugs, sometimes the Object implementation will be used even
+ * when the browser supports typed arrays.
+ *
+ * Note:
+ *
+ *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+ *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *     incorrect length in some situations.
+
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+ * get the Object implementation, which is slower but behaves correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
+  ? global.TYPED_ARRAY_SUPPORT
+  : typedArraySupport()
+
+/*
+ * Export kMaxLength after typed array support is determined.
+ */
+exports.kMaxLength = kMaxLength()
+
+function typedArraySupport () {
+  try {
+    var arr = new Uint8Array(1)
+    arr.__proto__ = {__proto__: Uint8Array.prototype, foo: function () { return 42 }}
+    return arr.foo() === 42 && // typed array instances can be augmented
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+  } catch (e) {
+    return false
+  }
+}
+
+function kMaxLength () {
+  return Buffer.TYPED_ARRAY_SUPPORT
+    ? 0x7fffffff
+    : 0x3fffffff
+}
+
+function createBuffer (that, length) {
+  if (kMaxLength() < length) {
+    throw new RangeError('Invalid typed array length')
+  }
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = new Uint8Array(length)
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    if (that === null) {
+      that = new Buffer(length)
+    }
+    that.length = length
+  }
+
+  return that
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
+    return new Buffer(arg, encodingOrOffset, length)
+  }
+
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new Error(
+        'If encoding is specified then the first argument must be a string'
+      )
+    }
+    return allocUnsafe(this, arg)
+  }
+  return from(this, arg, encodingOrOffset, length)
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+// TODO: Legacy, not needed anymore. Remove in next major version.
+Buffer._augment = function (arr) {
+  arr.__proto__ = Buffer.prototype
+  return arr
+}
+
+function from (that, value, encodingOrOffset, length) {
+  if (typeof value === 'number') {
+    throw new TypeError('"value" argument must not be a number')
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return fromArrayBuffer(that, value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'string') {
+    return fromString(that, value, encodingOrOffset)
+  }
+
+  return fromObject(that, value)
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(null, value, encodingOrOffset, length)
+}
+
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype
+  Buffer.__proto__ = Uint8Array
+  if (typeof Symbol !== 'undefined' && Symbol.species &&
+      Buffer[Symbol.species] === Buffer) {
+    // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+    Object.defineProperty(Buffer, Symbol.species, {
+      value: null,
+      configurable: true
+    })
+  }
+}
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be a number')
+  } else if (size < 0) {
+    throw new RangeError('"size" argument must not be negative')
+  }
+}
+
+function alloc (that, size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(that, size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(that, size).fill(fill, encoding)
+      : createBuffer(that, size).fill(fill)
+  }
+  return createBuffer(that, size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(null, size, fill, encoding)
+}
+
+function allocUnsafe (that, size) {
+  assertSize(size)
+  that = createBuffer(that, size < 0 ? 0 : checked(size) | 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < size; ++i) {
+      that[i] = 0
+    }
+  }
+  return that
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(null, size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(null, size)
+}
+
+function fromString (that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('"encoding" must be a valid string encoding')
+  }
+
+  var length = byteLength(string, encoding) | 0
+  that = createBuffer(that, length)
+
+  var actual = that.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    that = that.slice(0, actual)
+  }
+
+  return that
+}
+
+function fromArrayLike (that, array) {
+  var length = array.length < 0 ? 0 : checked(array.length) | 0
+  that = createBuffer(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+function fromArrayBuffer (that, array, byteOffset, length) {
+  array.byteLength // this throws if `array` is not a valid ArrayBuffer
+
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('\'offset\' is out of bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('\'length\' is out of bounds')
+  }
+
+  if (byteOffset === undefined && length === undefined) {
+    array = new Uint8Array(array)
+  } else if (length === undefined) {
+    array = new Uint8Array(array, byteOffset)
+  } else {
+    array = new Uint8Array(array, byteOffset, length)
+  }
+
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = array
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that = fromArrayLike(that, array)
+  }
+  return that
+}
+
+function fromObject (that, obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0
+    that = createBuffer(that, len)
+
+    if (that.length === 0) {
+      return that
+    }
+
+    obj.copy(that, 0, 0, len)
+    return that
+  }
+
+  if (obj) {
+    if ((typeof ArrayBuffer !== 'undefined' &&
+        obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
+      if (typeof obj.length !== 'number' || isnan(obj.length)) {
+        return createBuffer(that, 0)
+      }
+      return fromArrayLike(that, obj)
+    }
+
+    if (obj.type === 'Buffer' && isArray(obj.data)) {
+      return fromArrayLike(that, obj.data)
+    }
+  }
+
+  throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
+}
+
+function checked (length) {
+  // Note: cannot use `length < kMaxLength()` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= kMaxLength()) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return !!(b != null && b._isBuffer)
+}
+
+Buffer.compare = function compare (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError('Arguments must be Buffers')
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length)
+  var pos = 0
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i]
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    }
+    buf.copy(buffer, pos)
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
+      (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    string = '' + string
+  }
+
+  var len = string.length
+  if (len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+      case undefined:
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) return utf8ToBytes(string).length // assume utf8
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+// Buffer instances.
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  var i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  var len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  var len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  var len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length | 0
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max) str += ' ... '
+  }
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError('Argument must be a Buffer')
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  var x = thisEnd - thisStart
+  var y = end - start
+  var len = Math.min(x, y)
+
+  var thisCopy = this.slice(thisStart, thisEnd)
+  var targetCopy = target.slice(start, end)
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset  // Coerce to Number.
+  if (isNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (Buffer.TYPED_ARRAY_SUPPORT &&
+        typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1
+  var arrLength = arr.length
+  var valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  var i
+  if (dir) {
+    var foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  // must be an even number of digits
+  var strLen = string.length
+  if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (isNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function latin1Write (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset | 0
+    if (isFinite(length)) {
+      length = length | 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  // legacy write(string, encoding, offset, length) - remove in v0.13
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+      : (firstByte > 0xBF) ? 2
+      : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; ++i) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = this.subarray(start, end)
+    newBuf.__proto__ = Buffer.prototype
+  } else {
+    var sliceLen = end - start
+    newBuf = new Buffer(sliceLen, undefined)
+    for (var i = 0; i < sliceLen; ++i) {
+      newBuf[i] = this[i + start]
+    }
+  }
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+function objectWriteUInt16 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
+    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+      (littleEndian ? i : 1 - i) * 8
+  }
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+function objectWriteUInt32 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
+    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+  }
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = (value >>> 24)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 1] = (value >>> 8)
+    this[offset] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 3] = (value >>> 24)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+  var i
+
+  if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    // ascending copy from start
+    for (i = 0; i < len; ++i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, start + len),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0)
+      if (code < 256) {
+        val = code
+      }
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  var i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val)
+      ? val
+      : utf8ToBytes(new Buffer(val, encoding).toString())
+    var len = bytes.length
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function stringtrim (str) {
+  if (str.trim) return str.trim()
+  return str.replace(/^\s+|\s+$/g, '')
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+function isnan (val) {
+  return val !== val // eslint-disable-line no-self-compare
+}
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ }),
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/*<replacement>*/
+
+var processNextTick = __webpack_require__(8).nextTick;
+/*</replacement>*/
+
+// undocumented cb() API, needed for core, not for public API
+function destroy(err, cb) {
+  var _this = this;
+
+  var readableDestroyed = this._readableState && this._readableState.destroyed;
+  var writableDestroyed = this._writableState && this._writableState.destroyed;
+
+  if (readableDestroyed || writableDestroyed) {
+    if (cb) {
+      cb(err);
+    } else if (err && (!this._writableState || !this._writableState.errorEmitted)) {
+      processNextTick(emitErrorNT, this, err);
+    }
+    return this;
+  }
+
+  // we set destroyed to true before firing error callbacks in order
+  // to make it re-entrance safe in case destroy() is called within callbacks
+
+  if (this._readableState) {
+    this._readableState.destroyed = true;
+  }
+
+  // if this is a duplex stream mark the writable part as destroyed as well
+  if (this._writableState) {
+    this._writableState.destroyed = true;
+  }
+
+  this._destroy(err || null, function (err) {
+    if (!cb && err) {
+      processNextTick(emitErrorNT, _this, err);
+      if (_this._writableState) {
+        _this._writableState.errorEmitted = true;
+      }
+    } else if (cb) {
+      cb(err);
+    }
+  });
+
+  return this;
+}
+
+function undestroy() {
+  if (this._readableState) {
+    this._readableState.destroyed = false;
+    this._readableState.reading = false;
+    this._readableState.ended = false;
+    this._readableState.endEmitted = false;
+  }
+
+  if (this._writableState) {
+    this._writableState.destroyed = false;
+    this._writableState.ended = false;
+    this._writableState.ending = false;
+    this._writableState.finished = false;
+    this._writableState.errorEmitted = false;
+  }
+}
+
+function emitErrorNT(self, err) {
+  self.emit('error', err);
+}
+
+module.exports = {
+  destroy: destroy,
+  undestroy: undestroy
+};
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// a transform stream is a readable/writable stream where you do
+// something with the data.  Sometimes it's called a "filter",
+// but that's not a great name for it, since that implies a thing where
+// some bits pass through, and others are simply ignored.  (That would
+// be a valid example of a transform, of course.)
+//
+// While the output is causally related to the input, it's not a
+// necessarily symmetric or synchronous transformation.  For example,
+// a zlib stream might take multiple plain-text writes(), and then
+// emit a single compressed chunk some time in the future.
+//
+// Here's how this works:
+//
+// The Transform stream has all the aspects of the readable and writable
+// stream classes.  When you write(chunk), that calls _write(chunk,cb)
+// internally, and returns false if there's a lot of pending writes
+// buffered up.  When you call read(), that calls _read(n) until
+// there's enough pending readable data buffered up.
+//
+// In a transform stream, the written data is placed in a buffer.  When
+// _read(n) is called, it transforms the queued up data, calling the
+// buffered _write cb's as it consumes chunks.  If consuming a single
+// written chunk would result in multiple output chunks, then the first
+// outputted bit calls the readcb, and subsequent chunks just go into
+// the read buffer, and will cause it to emit 'readable' if necessary.
+//
+// This way, back-pressure is actually determined by the reading side,
+// since _read has to be called to start processing a new chunk.  However,
+// a pathological inflate type of transform can cause excessive buffering
+// here.  For example, imagine a stream where every byte of input is
+// interpreted as an integer from 0-255, and then results in that many
+// bytes of output.  Writing the 4 bytes {ff,ff,ff,ff} would result in
+// 1kb of data being output.  In this case, you could write a very small
+// amount of input, and end up with a very large amount of output.  In
+// such a pathological inflating mechanism, there'd be no way to tell
+// the system to stop doing the transform.  A single 4MB write could
+// cause the system to run out of memory.
+//
+// However, even in such a pathological case, only a single written chunk
+// would be consumed, and then the rest would wait (un-transformed) until
+// the results of the previous transformed chunk were consumed.
+
+
+
+module.exports = Transform;
+
+var Duplex = __webpack_require__(2);
+
+/*<replacement>*/
+var util = __webpack_require__(7);
+util.inherits = __webpack_require__(4);
+/*</replacement>*/
+
+util.inherits(Transform, Duplex);
+
+function afterTransform(er, data) {
+  var ts = this._transformState;
+  ts.transforming = false;
+
+  var cb = ts.writecb;
+
+  if (!cb) {
+    return this.emit('error', new Error('write callback called multiple times'));
+  }
+
+  ts.writechunk = null;
+  ts.writecb = null;
+
+  if (data != null) // single equals check for both `null` and `undefined`
+    this.push(data);
+
+  cb(er);
+
+  var rs = this._readableState;
+  rs.reading = false;
+  if (rs.needReadable || rs.length < rs.highWaterMark) {
+    this._read(rs.highWaterMark);
+  }
+}
+
+function Transform(options) {
+  if (!(this instanceof Transform)) return new Transform(options);
+
+  Duplex.call(this, options);
+
+  this._transformState = {
+    afterTransform: afterTransform.bind(this),
+    needTransform: false,
+    transforming: false,
+    writecb: null,
+    writechunk: null,
+    writeencoding: null
+  };
+
+  // start out asking for a readable event once data is transformed.
+  this._readableState.needReadable = true;
+
+  // we have implemented the _read method, and done the other things
+  // that Readable wants before the first _read call, so unset the
+  // sync guard flag.
+  this._readableState.sync = false;
+
+  if (options) {
+    if (typeof options.transform === 'function') this._transform = options.transform;
+
+    if (typeof options.flush === 'function') this._flush = options.flush;
+  }
+
+  // When the writable side finishes, then flush out anything remaining.
+  this.on('prefinish', prefinish);
+}
+
+function prefinish() {
+  var _this = this;
+
+  if (typeof this._flush === 'function') {
+    this._flush(function (er, data) {
+      done(_this, er, data);
+    });
+  } else {
+    done(this, null, null);
+  }
+}
+
+Transform.prototype.push = function (chunk, encoding) {
+  this._transformState.needTransform = false;
+  return Duplex.prototype.push.call(this, chunk, encoding);
+};
+
+// This is the part where you do stuff!
+// override this function in implementation classes.
+// 'chunk' is an input chunk.
+//
+// Call `push(newChunk)` to pass along transformed output
+// to the readable side.  You may call 'push' zero or more times.
+//
+// Call `cb(err)` when you are done with this chunk.  If you pass
+// an error, then that'll put the hurt on the whole operation.  If you
+// never call cb(), then you'll never get another chunk.
+Transform.prototype._transform = function (chunk, encoding, cb) {
+  throw new Error('_transform() is not implemented');
+};
+
+Transform.prototype._write = function (chunk, encoding, cb) {
+  var ts = this._transformState;
+  ts.writecb = cb;
+  ts.writechunk = chunk;
+  ts.writeencoding = encoding;
+  if (!ts.transforming) {
+    var rs = this._readableState;
+    if (ts.needTransform || rs.needReadable || rs.length < rs.highWaterMark) this._read(rs.highWaterMark);
+  }
+};
+
+// Doesn't matter what the args are here.
+// _transform does all the work.
+// That we got here means that the readable side wants more data.
+Transform.prototype._read = function (n) {
+  var ts = this._transformState;
+
+  if (ts.writechunk !== null && ts.writecb && !ts.transforming) {
+    ts.transforming = true;
+    this._transform(ts.writechunk, ts.writeencoding, ts.afterTransform);
+  } else {
+    // mark that we need a transform, so that any data that comes in
+    // will get processed, now that we've asked for it.
+    ts.needTransform = true;
+  }
+};
+
+Transform.prototype._destroy = function (err, cb) {
+  var _this2 = this;
+
+  Duplex.prototype._destroy.call(this, err, function (err2) {
+    cb(err2);
+    _this2.emit('close');
+  });
+};
+
+function done(stream, er, data) {
+  if (er) return stream.emit('error', er);
+
+  if (data != null) // single equals check for both `null` and `undefined`
+    stream.push(data);
+
+  // if there's nothing in the write buffer, then that means
+  // that nothing more will ever be provided
+  if (stream._writableState.length) throw new Error('Calling transform done when ws.length != 0');
+
+  if (stream._transformState.transforming) throw new Error('Calling transform done when still transforming');
+
+  return stream.push(null);
+}
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports) {
+
+module.exports = isFunction
+
+var toString = Object.prototype.toString
+
+function isFunction (fn) {
+  var string = toString.call(fn)
+  return string === '[object Function]' ||
+    (typeof fn === 'function' && string !== '[object RegExp]') ||
+    (typeof window !== 'undefined' &&
+     // IE8 and below
+     (fn === window.setTimeout ||
+      fn === window.alert ||
+      fn === window.confirm ||
+      fn === window.prompt))
+};
+
+
+/***/ }),
+/* 25 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_stats_js__ = __webpack_require__(24);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_stats_js__ = __webpack_require__(31);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_stats_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_stats_js__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_dat_gui__ = __webpack_require__(25);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_dat_gui__ = __webpack_require__(32);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_dat_gui___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_dat_gui__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__geometry_Square__ = __webpack_require__(28);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__rendering_gl_OpenGLRenderer__ = __webpack_require__(30);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__Camera__ = __webpack_require__(31);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__globals__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__ = __webpack_require__(66);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__geometry_Square__ = __webpack_require__(35);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__rendering_gl_OpenGLRenderer__ = __webpack_require__(37);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__Camera__ = __webpack_require__(38);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__globals__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__ = __webpack_require__(39);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__particles_Particle__ = __webpack_require__(40);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__objLoader__ = __webpack_require__(41);
 
 
 
@@ -3317,36 +7736,66 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 
+
+
+const NUM_PARTICLES = 100000;
+const ACCELERATION = -1.0;
+const NULL = 'Null';
+const HAND = 'Hand';
+const DANTE = 'Dante';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
-    tesselations: 5,
-    'Load Scene': loadScene,
+    num_particles: NUM_PARTICLES,
+    size_particle: 0.4,
+    rotate_cam: true,
+    Obj: NULL,
+    color1: [255, 102, 255],
+    color2: [169, 217, 198],
+    color_freq: 1.0,
+    breath_rate: 1.0,
+    'Camera Info': printCameraInfo,
 };
-let square;
-let time = 0.0;
+var particle;
+var square; // this is billboard square
+let obj_Dante;
+let obj_Hand;
+// Camera
+const camera = new __WEBPACK_IMPORTED_MODULE_5__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 5.5), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
+// identity model matrix
+let identityModel = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].identity(identityModel);
+// model matrix that sets the size of particle billboard
+var billboardModelMatrix = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+var particle_transform;
+var particle_bg_transform;
+function printCameraInfo() {
+    console.log(camera.position);
+    console.log(camera.target);
+}
+// ------------------------------------------------------------
+// TODO: initialize other objects here
+function initObjs() {
+    obj_Dante = new __WEBPACK_IMPORTED_MODULE_9__objLoader__["a" /* default */]("Dante");
+    obj_Hand = new __WEBPACK_IMPORTED_MODULE_9__objLoader__["a" /* default */]("Hand");
+}
 function loadScene() {
-    square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */]();
+    particle = new __WEBPACK_IMPORTED_MODULE_8__particles_Particle__["a" /* default */](controls.num_particles);
+    particle.create();
+    square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0.0, 0.0, 0.0));
     square.create();
-    // Set up particles here. Hard-coded example data for now
-    let offsetsArray = [];
-    let colorsArray = [];
-    let n = 100.0;
-    for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-            offsetsArray.push(i);
-            offsetsArray.push(j);
-            offsetsArray.push(0);
-            colorsArray.push(i / n);
-            colorsArray.push(j / n);
-            colorsArray.push(1.0);
-            colorsArray.push(1.0); // Alpha channel
-        }
-    }
-    let offsets = new Float32Array(offsetsArray);
-    let colors = new Float32Array(colorsArray);
-    square.setInstanceVBOs(offsets, colors);
-    square.setNumInstances(n * n); // 10x10 grid of "particles"
+    initObjs();
+}
+// ------------------------------------------------------------
+// TODO : add new obj load func as callback of a callback
+function LoadObjFromfiles() {
+    obj_Dante.create("./obj/dante.obj", function () {
+        console.log('dante obj finish loading!');
+        obj_Hand.create("./obj/hand.obj", function () {
+            console.log('hand obj finish loading!');
+            particle.setMeshAttactPoints(obj_Hand, obj_Dante);
+        });
+    });
 }
 function main() {
     // Initial display for framerate
@@ -3356,8 +7805,6 @@ function main() {
     stats.domElement.style.left = '0px';
     stats.domElement.style.top = '0px';
     document.body.appendChild(stats.domElement);
-    // Add controls to the gui
-    const gui = new __WEBPACK_IMPORTED_MODULE_2_dat_gui__["GUI"]();
     // get canvas and webgl context
     const canvas = document.getElementById('canvas');
     const gl = canvas.getContext('webgl2');
@@ -3367,27 +7814,112 @@ function main() {
     // `setGL` is a function imported above which sets the value of `gl` in the `globals.ts` module.
     // Later, we can import `gl` from `globals.ts` to access it
     Object(__WEBPACK_IMPORTED_MODULE_6__globals__["b" /* setGL */])(gl);
-    // Initial call to load scene
     loadScene();
-    const camera = new __WEBPACK_IMPORTED_MODULE_5__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(50, 50, 10), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(50, 50, 0));
+    // ----------------------------------------------------------------
+    // Add controls to the gui
+    const gui = new __WEBPACK_IMPORTED_MODULE_2_dat_gui__["GUI"]();
+    // gui.add(controls, 'num_particles', 0, 1000000).step(50000).onChange(loadScene);
+    gui.add(controls, 'size_particle', 0.1, 1.2).step(0.1).onChange(setParticleSize);
+    gui.add(controls, 'Obj', [NULL, HAND, DANTE]).onChange(setObject);
+    gui.add(controls, 'rotate_cam');
+    gui.addColor(controls, 'color1').onChange(setParticleColor);
+    gui.addColor(controls, 'color2').onChange(setParticleColor);
+    gui.add(controls, 'color_freq', 1, 10).step(1).onChange(setParticleColorChangeFreq);
+    gui.add(controls, 'breath_rate', 1, 10).step(1).onChange(setParticleDrawBreathRate);
+    gui.add(controls, 'Camera Info');
+    // ----------------------------------------------------------------
+    // Open GL Renderer
     const renderer = new __WEBPACK_IMPORTED_MODULE_4__rendering_gl_OpenGLRenderer__["a" /* default */](canvas);
-    renderer.setClearColor(0.2, 0.2, 0.2, 1);
+    renderer.setClearColor(0.05, 0.05, 0.05, 1);
+    // disable depth test in particle rendering
+    // gl.enable(gl.DEPTH_TEST); // depth test
+    // enable transparency/color blending
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // Additive blending
-    const lambert = new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["b" /* default */]([
-        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(67)),
-        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(68)),
+    // ----------------------------------------------------------------
+    // setup particle shader with transform feedback(actually, fragment shader is not used here)
+    particle_transform = new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["b" /* default */]([
+        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(64)),
+        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(65)),
+    ], true, ['v_position', 'v_velocity', 'v_color', 'v_time']);
+    particle_transform.setGeometryColor(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(0.0, 1.0, 1.0, 1.0));
+    particle_transform.setTransformAcceleraton(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0.0, ACCELERATION, 0.0));
+    particle_transform.setMeshAttractCount(0);
+    // setup particle draw shaders
+    var particle_draw = new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["b" /* default */]([
+        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(66)),
+        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(67)),
     ]);
+    particle_draw.setIsAttractToPoint(0);
+    // ----------------------------------------------------------------
+    // set particle attract obj
+    function setObject() {
+        let attractCount;
+        switch (controls.Obj) {
+            case NULL:
+                particle_transform.setMeshAttractSelect(0);
+                particle_transform.setMeshAttractCount(0);
+                break;
+            case HAND:
+                particle_transform.setMeshAttractSelect(1);
+                attractCount = Math.min(obj_Hand.vertices.length, particle.numParticles);
+                particle_transform.setMeshAttractCount(attractCount);
+                break;
+            case DANTE:
+                particle_transform.setMeshAttractSelect(2);
+                attractCount = Math.min(obj_Dante.vertices.length, particle.numParticles);
+                particle_transform.setMeshAttractCount(attractCount);
+                break;
+        }
+    }
+    setObject();
+    // set particle size
+    function setParticleSize() {
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].scale(billboardModelMatrix, identityModel, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0.1 * controls.size_particle, 0.1 * controls.size_particle, 1.0));
+        particle_draw.setParticleSize(0.5 * controls.size_particle);
+    }
+    setParticleSize();
+    // set particle color
+    function setParticleColor() {
+        particle_transform.setParticleColor(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0));
+    }
+    setParticleColor();
+    // set particle color change frequency
+    function setParticleColorChangeFreq() {
+        particle_transform.setParticleColorChangeFreq(controls.color_freq);
+    }
+    setParticleColorChangeFreq();
+    // set particle color breath rate
+    function setParticleDrawBreathRate() {
+        particle_draw.setParticleDrawBreathRate(controls.breath_rate);
+    }
+    setParticleDrawBreathRate();
+    LoadObjFromfiles();
+    var appStartTime = Date.now();
+    var accumulateTime = 0;
+    // ----------------------------------------------------------------
     // This function will be called every frame
     function tick() {
-        camera.update();
+        if (controls.rotate_cam) {
+            camera.update(accumulateTime);
+            accumulateTime += 1.0;
+        }
         stats.begin();
-        lambert.setTime(time++);
+        // update time
+        var time = Date.now() - appStartTime;
+        // Set uniforms
+        particle_transform.setTimer(time);
+        particle_draw.setTimer(time);
+        // particles transform
+        renderer.transformParticles(camera, particle_transform, [
+            particle
+        ], identityModel);
+        // Set the viewport
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
+        // Clear color buffer
         renderer.clear();
-        renderer.render(camera, lambert, [
-            square,
-        ]);
+        // Render
+        renderer.renderParticles(camera, particle_draw, square, [particle], billboardModelMatrix);
         stats.end();
         // Tell the browser to call `tick` again whenever it renders a new frame
         requestAnimationFrame(tick);
@@ -3400,6 +7932,36 @@ function main() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.setAspectRatio(window.innerWidth / window.innerHeight);
     camera.updateProjectionMatrix();
+    var leftButton = 0;
+    var rightButton = 2;
+    var isMouseDragging = false;
+    canvas.onmousedown = function (ev) {
+        if (ev.button === leftButton) {
+            console.log('on left mouse button down!');
+            particle_transform.setIsAttractToPoint(1.0); // attract
+        }
+        else if (ev.button === rightButton) {
+            console.log('on right mouse button down!');
+            particle_transform.setIsAttractToPoint(-1.0); // repel
+        }
+        particle_transform.setAttractPos(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec2 */].fromValues((2.0 * ev.clientX / window.innerWidth) - 1.0, 1.0 - (2.0 * ev.clientY / window.innerHeight)), camera);
+        isMouseDragging = true;
+    };
+    canvas.onmouseup = function (ev) {
+        if (ev.button === leftButton) {
+            console.log('on left mouse button up!');
+        }
+        else if (ev.button === rightButton) {
+            console.log('on right mouse button up!');
+        }
+        particle_transform.setIsAttractToPoint(0);
+        isMouseDragging = false;
+    };
+    canvas.onmousemove = function (ev) {
+        if (isMouseDragging) {
+            console.log('on mouse move!');
+        }
+    };
     // Start the render loop
     tick();
 }
@@ -3407,7 +7969,7 @@ main();
 
 
 /***/ }),
-/* 19 */
+/* 26 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3876,7 +8438,7 @@ const sub = subtract;
 
 
 /***/ }),
-/* 20 */
+/* 27 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -4377,7 +8939,7 @@ const sub = subtract;
 
 
 /***/ }),
-/* 21 */
+/* 28 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6115,7 +10677,7 @@ const sub = subtract;
 
 
 /***/ }),
-/* 22 */
+/* 29 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -6135,9 +10697,9 @@ const sub = subtract;
 /* unused harmony export fromEuler */
 /* unused harmony export str */
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__common__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__mat3__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__vec3__ = __webpack_require__(6);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__vec4__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__mat3__ = __webpack_require__(14);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__vec3__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__vec4__ = __webpack_require__(16);
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -6805,44 +11367,45 @@ const setAxes = (function() {
 
 
 /***/ }),
-/* 23 */
+/* 30 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* unused harmony export create */
-/* unused harmony export clone */
-/* unused harmony export fromValues */
-/* unused harmony export copy */
-/* unused harmony export set */
-/* unused harmony export add */
-/* unused harmony export subtract */
-/* unused harmony export multiply */
-/* unused harmony export divide */
-/* unused harmony export ceil */
-/* unused harmony export floor */
-/* unused harmony export min */
-/* unused harmony export max */
-/* unused harmony export round */
-/* unused harmony export scale */
-/* unused harmony export scaleAndAdd */
-/* unused harmony export distance */
-/* unused harmony export squaredDistance */
-/* unused harmony export length */
-/* unused harmony export squaredLength */
-/* unused harmony export negate */
-/* unused harmony export inverse */
-/* unused harmony export normalize */
-/* unused harmony export dot */
-/* unused harmony export cross */
-/* unused harmony export lerp */
-/* unused harmony export random */
-/* unused harmony export transformMat2 */
-/* unused harmony export transformMat2d */
-/* unused harmony export transformMat3 */
-/* unused harmony export transformMat4 */
-/* unused harmony export str */
-/* unused harmony export exactEquals */
-/* unused harmony export equals */
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (immutable) */ __webpack_exports__["create"] = create;
+/* harmony export (immutable) */ __webpack_exports__["clone"] = clone;
+/* harmony export (immutable) */ __webpack_exports__["fromValues"] = fromValues;
+/* harmony export (immutable) */ __webpack_exports__["copy"] = copy;
+/* harmony export (immutable) */ __webpack_exports__["set"] = set;
+/* harmony export (immutable) */ __webpack_exports__["add"] = add;
+/* harmony export (immutable) */ __webpack_exports__["subtract"] = subtract;
+/* harmony export (immutable) */ __webpack_exports__["multiply"] = multiply;
+/* harmony export (immutable) */ __webpack_exports__["divide"] = divide;
+/* harmony export (immutable) */ __webpack_exports__["ceil"] = ceil;
+/* harmony export (immutable) */ __webpack_exports__["floor"] = floor;
+/* harmony export (immutable) */ __webpack_exports__["min"] = min;
+/* harmony export (immutable) */ __webpack_exports__["max"] = max;
+/* harmony export (immutable) */ __webpack_exports__["round"] = round;
+/* harmony export (immutable) */ __webpack_exports__["scale"] = scale;
+/* harmony export (immutable) */ __webpack_exports__["scaleAndAdd"] = scaleAndAdd;
+/* harmony export (immutable) */ __webpack_exports__["distance"] = distance;
+/* harmony export (immutable) */ __webpack_exports__["squaredDistance"] = squaredDistance;
+/* harmony export (immutable) */ __webpack_exports__["length"] = length;
+/* harmony export (immutable) */ __webpack_exports__["squaredLength"] = squaredLength;
+/* harmony export (immutable) */ __webpack_exports__["negate"] = negate;
+/* harmony export (immutable) */ __webpack_exports__["inverse"] = inverse;
+/* harmony export (immutable) */ __webpack_exports__["normalize"] = normalize;
+/* harmony export (immutable) */ __webpack_exports__["dot"] = dot;
+/* harmony export (immutable) */ __webpack_exports__["cross"] = cross;
+/* harmony export (immutable) */ __webpack_exports__["lerp"] = lerp;
+/* harmony export (immutable) */ __webpack_exports__["random"] = random;
+/* harmony export (immutable) */ __webpack_exports__["transformMat2"] = transformMat2;
+/* harmony export (immutable) */ __webpack_exports__["transformMat2d"] = transformMat2d;
+/* harmony export (immutable) */ __webpack_exports__["transformMat3"] = transformMat3;
+/* harmony export (immutable) */ __webpack_exports__["transformMat4"] = transformMat4;
+/* harmony export (immutable) */ __webpack_exports__["str"] = str;
+/* harmony export (immutable) */ __webpack_exports__["exactEquals"] = exactEquals;
+/* harmony export (immutable) */ __webpack_exports__["equals"] = equals;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__common__ = __webpack_require__(0);
 /* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
@@ -7351,7 +11914,7 @@ function equals(a, b) {
  * @function
  */
 const len = length;
-/* unused harmony export len */
+/* harmony export (immutable) */ __webpack_exports__["len"] = len;
 
 
 /**
@@ -7359,7 +11922,7 @@ const len = length;
  * @function
  */
 const sub = subtract;
-/* unused harmony export sub */
+/* harmony export (immutable) */ __webpack_exports__["sub"] = sub;
 
 
 /**
@@ -7367,7 +11930,7 @@ const sub = subtract;
  * @function
  */
 const mul = multiply;
-/* unused harmony export mul */
+/* harmony export (immutable) */ __webpack_exports__["mul"] = mul;
 
 
 /**
@@ -7375,7 +11938,7 @@ const mul = multiply;
  * @function
  */
 const div = divide;
-/* unused harmony export div */
+/* harmony export (immutable) */ __webpack_exports__["div"] = div;
 
 
 /**
@@ -7383,7 +11946,7 @@ const div = divide;
  * @function
  */
 const dist = distance;
-/* unused harmony export dist */
+/* harmony export (immutable) */ __webpack_exports__["dist"] = dist;
 
 
 /**
@@ -7391,7 +11954,7 @@ const dist = distance;
  * @function
  */
 const sqrDist = squaredDistance;
-/* unused harmony export sqrDist */
+/* harmony export (immutable) */ __webpack_exports__["sqrDist"] = sqrDist;
 
 
 /**
@@ -7399,7 +11962,7 @@ const sqrDist = squaredDistance;
  * @function
  */
 const sqrLen = squaredLength;
-/* unused harmony export sqrLen */
+/* harmony export (immutable) */ __webpack_exports__["sqrLen"] = sqrLen;
 
 
 /**
@@ -7442,12 +12005,12 @@ const forEach = (function() {
     return a;
   };
 })();
-/* unused harmony export forEach */
+/* harmony export (immutable) */ __webpack_exports__["forEach"] = forEach;
 
 
 
 /***/ }),
-/* 24 */
+/* 31 */
 /***/ (function(module, exports) {
 
 // stats.js - http://github.com/mrdoob/stats.js
@@ -7459,14 +12022,14 @@ a+"px",m=b,r=0);return b},update:function(){l=this.end()}}};"object"===typeof mo
 
 
 /***/ }),
-/* 25 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(26)
-module.exports.color = __webpack_require__(27)
+module.exports = __webpack_require__(33)
+module.exports.color = __webpack_require__(34)
 
 /***/ }),
-/* 26 */
+/* 33 */
 /***/ (function(module, exports) {
 
 /**
@@ -11131,7 +15694,7 @@ dat.dom.dom,
 dat.utils.common);
 
 /***/ }),
-/* 27 */
+/* 34 */
 /***/ (function(module, exports) {
 
 /**
@@ -11891,43 +16454,43 @@ dat.color.toString,
 dat.utils.common);
 
 /***/ }),
-/* 28 */
+/* 35 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__rendering_gl_Drawable__ = __webpack_require__(29);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__globals__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__ = __webpack_require__(36);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__globals__ = __webpack_require__(3);
 
 
-class Square extends __WEBPACK_IMPORTED_MODULE_0__rendering_gl_Drawable__["a" /* default */] {
-    constructor() {
+
+class Square extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* default */] {
+    constructor(center) {
         super(); // Call the constructor of the super class. This is required.
+        this.center = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(center[0], center[1], center[2], 1);
     }
     create() {
         this.indices = new Uint32Array([0, 1, 2,
             0, 2, 3]);
+        this.normals = new Float32Array([0, 0, 1, 0,
+            0, 0, 1, 0,
+            0, 0, 1, 0,
+            0, 0, 1, 0]);
         this.positions = new Float32Array([-0.5, -0.5, 0, 1,
             0.5, -0.5, 0, 1,
             0.5, 0.5, 0, 1,
             -0.5, 0.5, 0, 1]);
         this.generateIdx();
         this.generatePos();
-        this.generateCol();
-        this.generateTranslate();
+        this.generateNor();
         this.count = this.indices.length;
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.bufIdx);
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.indices, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.bufPos);
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.positions, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.bufIdx);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.indices, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.bufNor);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.normals, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.bufPos);
+        __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].ARRAY_BUFFER, this.positions, __WEBPACK_IMPORTED_MODULE_2__globals__["a" /* gl */].STATIC_DRAW);
         console.log(`Created square`);
-    }
-    setInstanceVBOs(offsets, colors) {
-        this.colors = colors;
-        this.offsets = offsets;
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.bufCol);
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.colors, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.bufTranslate);
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, this.offsets, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].STATIC_DRAW);
     }
 }
 ;
@@ -11935,66 +16498,53 @@ class Square extends __WEBPACK_IMPORTED_MODULE_0__rendering_gl_Drawable__["a" /*
 
 
 /***/ }),
-/* 29 */
+/* 36 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__globals__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__globals__ = __webpack_require__(3);
 
 class Drawable {
     constructor() {
         this.count = 0;
-        this.idxGenerated = false;
-        this.posGenerated = false;
-        this.colGenerated = false;
-        this.translateGenerated = false;
-        this.numInstances = 0; // How many instances of this Drawable the shader program should draw
+        this.idxBound = false;
+        this.posBound = false;
+        this.norBound = false;
     }
     destory() {
         __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].deleteBuffer(this.bufIdx);
         __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].deleteBuffer(this.bufPos);
-        __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].deleteBuffer(this.bufCol);
-        __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].deleteBuffer(this.bufTranslate);
+        __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].deleteBuffer(this.bufNor);
     }
     generateIdx() {
-        this.idxGenerated = true;
+        this.idxBound = true;
         this.bufIdx = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
     }
     generatePos() {
-        this.posGenerated = true;
+        this.posBound = true;
         this.bufPos = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
     }
-    generateCol() {
-        this.colGenerated = true;
-        this.bufCol = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
-    }
-    generateTranslate() {
-        this.translateGenerated = true;
-        this.bufTranslate = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+    generateNor() {
+        this.norBound = true;
+        this.bufNor = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
     }
     bindIdx() {
-        if (this.idxGenerated) {
+        if (this.idxBound) {
             __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ELEMENT_ARRAY_BUFFER, this.bufIdx);
         }
-        return this.idxGenerated;
+        return this.idxBound;
     }
     bindPos() {
-        if (this.posGenerated) {
+        if (this.posBound) {
             __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.bufPos);
         }
-        return this.posGenerated;
+        return this.posBound;
     }
-    bindCol() {
-        if (this.colGenerated) {
-            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.bufCol);
+    bindNor() {
+        if (this.norBound) {
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.bufNor);
         }
-        return this.colGenerated;
-    }
-    bindTranslate() {
-        if (this.translateGenerated) {
-            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.bufTranslate);
-        }
-        return this.translateGenerated;
+        return this.norBound;
     }
     elemCount() {
         return this.count;
@@ -12002,23 +16552,30 @@ class Drawable {
     drawMode() {
         return __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRIANGLES;
     }
-    setNumInstances(num) {
-        this.numInstances = num;
-    }
 }
 ;
 /* harmony default export */ __webpack_exports__["a"] = (Drawable);
 
 
 /***/ }),
-/* 30 */
+/* 37 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__globals__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__globals__ = __webpack_require__(3);
 
 
+// These consts should be consistent with those in Particle.ts & particle-vert.glsl
+const POSITION_LOCATION = 2;
+const VELOCITY_LOCATION = 3;
+const COLOR_LOCATION = 4;
+const TIME_LOCATION = 5;
+const ID_LOCATION = 6;
+const MESH_ATTRACT_LOCATION1 = 7;
+const MESH_ATTRACT_LOCATION2 = 8;
+const NUM_LOCATIONS = 7;
+var currentSourceIdx = 0;
 // In this file, `gl` is accessible because it is imported above
 class OpenGLRenderer {
     constructor(canvas) {
@@ -12037,16 +16594,86 @@ class OpenGLRenderer {
     render(camera, prog, drawables) {
         let model = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
         let viewProj = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
-        let color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec4 */].fromValues(1, 0, 0, 1);
-        // Each column of the axes matrix is an axis. Right, Up, Forward.
-        let axes = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat3 */].fromValues(camera.right[0], camera.right[1], camera.right[2], camera.up[0], camera.up[1], camera.up[2], camera.forward[0], camera.forward[1], camera.forward[2]);
+        //let color = vec4.fromValues(1, 0, 0, 1);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].identity(model);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
         prog.setModelMatrix(model);
         prog.setViewProjMatrix(viewProj);
-        prog.setCameraAxes(axes);
+        //prog.setGeometryColor(color);
         for (let drawable of drawables) {
             prog.draw(drawable);
+        }
+    }
+    transformParticles(camera, prog, particles, model) {
+        if (particles.length !== 0) {
+            let viewProj = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
+            prog.setModelMatrix(model);
+            prog.setViewProjMatrix(viewProj);
+            prog.use();
+            var destinationIdx = (currentSourceIdx + 1) % 2;
+            for (let i = 0; i < particles.length; i++) {
+                // Toggle source and destination VBO
+                var sourceVAO = particles[i].getVAO(currentSourceIdx);
+                var destinationTransformFeedback = particles[i].getTransformFeedbacks(destinationIdx);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindVertexArray(sourceVAO);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindTransformFeedback(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TRANSFORM_FEEDBACK, destinationTransformFeedback);
+                // NOTE: The following four lines shouldn't be necessary, but are required to work in ANGLE
+                // due to a bug in its handling of transform feedback objects.
+                // https://bugs.chromium.org/p/angleproject/issues/detail?id=2051
+                var vbo = particles[i].getVBO(destinationIdx);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 0, vbo[POSITION_LOCATION]);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 1, vbo[VELOCITY_LOCATION]);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 2, vbo[COLOR_LOCATION]);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 3, vbo[TIME_LOCATION]);
+                // -------------------------------------------------------------
+                // -------------- this portion is different --------------------
+                // -------------------------------------------------------------
+                // Attributes per-vertex when doing transform feedback needs setting to 0 when doing transform feedback
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(POSITION_LOCATION, 0);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(VELOCITY_LOCATION, 0);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(COLOR_LOCATION, 0);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(TIME_LOCATION, 0);
+                // Turn off rasterization - we are not drawing
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enable(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].RASTERIZER_DISCARD);
+                // Update position and rotation using transform feedback
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].beginTransformFeedback(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].POINTS);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].drawArrays(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].POINTS, 0, particles[i].numParticles);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].endTransformFeedback();
+                // Restore state
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].disable(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].RASTERIZER_DISCARD);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].useProgram(null);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].ARRAY_BUFFER, null);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindTransformFeedback(__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].TRANSFORM_FEEDBACK, null);
+                // -------------------------------------------------------------
+                // // Draw particles using transform feedback
+                // gl.beginTransformFeedback(gl.POINTS);
+                // gl.drawArrays(gl.POINTS, 0, particles[i].numParticles);
+                // gl.endTransformFeedback();
+            }
+            // Ping pong the buffers
+            currentSourceIdx = (currentSourceIdx + 1) % 2;
+        }
+    }
+    renderParticles(camera, prog, drawable, particles, model) {
+        if (particles.length !== 0) {
+            let viewProj = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+            let color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["e" /* vec4 */].fromValues(1, 0, 0, 1);
+            // Each column of the axes matrix is an axis. Right, Up, Forward.
+            let axes = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["a" /* mat3 */].fromValues(camera.right[0], camera.right[1], camera.right[2], camera.up[0], camera.up[1], camera.up[2], camera.forward[0], camera.forward[1], camera.forward[2]);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
+            prog.setModelMatrix(model);
+            prog.setViewProjMatrix(viewProj);
+            prog.setCameraAxes(axes);
+            for (let i = 0; i < particles.length; i++) {
+                var sourceVAO = particles[i].getVAO(currentSourceIdx);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].bindVertexArray(sourceVAO);
+                // Attributes per-instance when drawing sets back to 1 when drawing instances
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(POSITION_LOCATION, 1);
+                __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(COLOR_LOCATION, 1);
+                // draw instances
+                prog.draw(drawable, true, particles[i].numParticles);
+            }
         }
     }
 }
@@ -12055,64 +16682,73 @@ class OpenGLRenderer {
 
 
 /***/ }),
-/* 31 */
+/* 38 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_3d_view_controls__ = __webpack_require__(32);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_3d_view_controls___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_3d_view_controls__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_gl_matrix__ = __webpack_require__(2);
-
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(5);
 
 class Camera {
     constructor(position, target) {
-        this.projectionMatrix = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["b" /* mat4 */].create();
-        this.viewMatrix = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["b" /* mat4 */].create();
+        // this.controls = CameraControls(document.getElementById('canvas'), {
+        //   eye: position,
+        //   center: target,
+        // });
+        // controls: any;
+        this.projectionMatrix = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+        this.viewMatrix = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
         this.fovy = 45;
         this.aspectRatio = 1;
         this.near = 0.1;
         this.far = 1000;
-        this.position = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
-        this.direction = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
-        this.target = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
-        this.up = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
-        this.right = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
-        this.forward = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].create();
-        const canvas = document.getElementById('canvas');
-        this.controls = __WEBPACK_IMPORTED_MODULE_0_3d_view_controls__(canvas, {
-            position: position,
-            center: target,
-        });
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].add(this.target, this.position, this.direction);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["b" /* mat4 */].lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
-        this.position = this.controls.eye;
-        this.up = this.controls.up;
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].subtract(this.forward, this.target, this.position);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].normalize(this.forward, this.forward);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].cross(this.right, this.forward, this.up);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].normalize(this.right, this.right);
+        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.direction = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.target = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.up = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.right = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.forward = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.position[0] = position[0];
+        this.position[1] = position[1];
+        this.position[2] = position[2];
+        this.target[0] = target[0];
+        this.target[1] = target[1];
+        this.target[2] = target[2];
+        let dir = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].subtract(dir, target, position);
+        this.rotRadius = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].length(dir);
+        // vec3.add(this.target, this.position, this.direction);
+        this.up = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 1, 0);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].lookAt(this.viewMatrix, this.position, this.target, this.up);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].subtract(this.forward, this.target, this.position);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].normalize(this.forward, this.forward);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].cross(this.right, this.forward, this.up);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].normalize(this.right, this.right);
     }
     setAspectRatio(aspectRatio) {
         this.aspectRatio = aspectRatio;
     }
     updateProjectionMatrix() {
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["b" /* mat4 */].perspective(this.projectionMatrix, this.fovy, this.aspectRatio, this.near, this.far);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].perspective(this.projectionMatrix, this.fovy, this.aspectRatio, this.near, this.far);
     }
-    update() {
-        this.controls.tick();
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].add(this.target, this.position, this.direction);
-        this.position = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].fromValues(this.controls.eye[0], this.controls.eye[1], this.controls.eye[2]);
-        this.target = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].fromValues(this.controls.center[0], this.controls.center[1], this.controls.center[2]);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["b" /* mat4 */].lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
-        this.position = this.controls.eye;
-        this.up = __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].fromValues(this.controls.up[0], this.controls.up[1], this.controls.up[2]);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].normalize(this.up, this.up);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].subtract(this.forward, this.target, this.position);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].normalize(this.forward, this.forward);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].cross(this.right, this.forward, this.up);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].normalize(this.right, this.right);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].cross(this.up, this.right, this.forward);
-        __WEBPACK_IMPORTED_MODULE_1_gl_matrix__["c" /* vec3 */].normalize(this.up, this.up);
+    // rotate camera
+    update(t) {
+        // this.controls.tick();
+        let cosTheta = Math.cos(0.001 * t);
+        let sinTheta = Math.sin(0.001 * t);
+        // this.position = vec3.fromValues(this.controls.eye[0], this.controls.eye[1], this.controls.eye[2]);
+        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(this.rotRadius * cosTheta + this.target[0], this.target[1], this.rotRadius * sinTheta + this.target[2]);
+        // this.target = vec3.fromValues(this.controls.center[0], this.controls.center[1], this.controls.center[2]);
+        // mat4.lookAt(this.viewMatrix, this.controls.eye, this.controls.center, this.controls.up);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].lookAt(this.viewMatrix, this.position, this.target, this.up);
+        // this.position = this.controls.eye;
+        // this.up = vec3.fromValues(this.controls.up[0], this.controls.up[1], this.controls.up[2]);
+        // vec3.normalize(this.up, this.up);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].subtract(this.forward, this.target, this.position);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].normalize(this.forward, this.forward);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].cross(this.right, this.forward, this.up);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].normalize(this.right, this.right);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].cross(this.up, this.right, this.forward);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].normalize(this.up, this.up);
     }
 }
 ;
@@ -12120,3064 +16756,16 @@ class Camera {
 
 
 /***/ }),
-/* 32 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = createCamera
-
-var now         = __webpack_require__(33)
-var createView  = __webpack_require__(35)
-var mouseChange = __webpack_require__(58)
-var mouseWheel  = __webpack_require__(60)
-var mouseOffset = __webpack_require__(63)
-var hasPassive  = __webpack_require__(64)
-
-function createCamera(element, options) {
-  element = element || document.body
-  options = options || {}
-
-  var limits  = [ 0.01, Infinity ]
-  if('distanceLimits' in options) {
-    limits[0] = options.distanceLimits[0]
-    limits[1] = options.distanceLimits[1]
-  }
-  if('zoomMin' in options) {
-    limits[0] = options.zoomMin
-  }
-  if('zoomMax' in options) {
-    limits[1] = options.zoomMax
-  }
-
-  var view = createView({
-    center: options.center || [0,0,0],
-    up:     options.up     || [0,1,0],
-    eye:    options.eye    || [0,0,10],
-    mode:   options.mode   || 'orbit',
-    distanceLimits: limits
-  })
-
-  var pmatrix = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-  var distance = 0.0
-  var width   = element.clientWidth
-  var height  = element.clientHeight
-
-  var camera = {
-    view:               view,
-    element:            element,
-    delay:              options.delay          || 16,
-    rotateSpeed:        options.rotateSpeed    || 1,
-    zoomSpeed:          options.zoomSpeed      || 1,
-    translateSpeed:     options.translateSpeed || 1,
-    flipX:              !!options.flipX,
-    flipY:              !!options.flipY,
-    modes:              view.modes,
-    tick: function() {
-      var t = now()
-      var delay = this.delay
-      view.idle(t-delay)
-      view.flush(t-(100+delay*2))
-      var ctime = t - 2 * delay
-      view.recalcMatrix(ctime)
-      var allEqual = true
-      var matrix = view.computedMatrix
-      for(var i=0; i<16; ++i) {
-        allEqual = allEqual && (pmatrix[i] === matrix[i])
-        pmatrix[i] = matrix[i]
-      }
-      var sizeChanged =
-          element.clientWidth === width &&
-          element.clientHeight === height
-      width  = element.clientWidth
-      height = element.clientHeight
-      if(allEqual) {
-        return !sizeChanged
-      }
-      distance = Math.exp(view.computedRadius[0])
-      return true
-    },
-    lookAt: function(center, eye, up) {
-      view.lookAt(view.lastT(), center, eye, up)
-    },
-    rotate: function(pitch, yaw, roll) {
-      view.rotate(view.lastT(), pitch, yaw, roll)
-    },
-    pan: function(dx, dy, dz) {
-      view.pan(view.lastT(), dx, dy, dz)
-    },
-    translate: function(dx, dy, dz) {
-      view.translate(view.lastT(), dx, dy, dz)
-    }
-  }
-
-  Object.defineProperties(camera, {
-    matrix: {
-      get: function() {
-        return view.computedMatrix
-      },
-      set: function(mat) {
-        view.setMatrix(view.lastT(), mat)
-        return view.computedMatrix
-      },
-      enumerable: true
-    },
-    mode: {
-      get: function() {
-        return view.getMode()
-      },
-      set: function(mode) {
-        view.setMode(mode)
-        return view.getMode()
-      },
-      enumerable: true
-    },
-    center: {
-      get: function() {
-        return view.computedCenter
-      },
-      set: function(ncenter) {
-        view.lookAt(view.lastT(), ncenter)
-        return view.computedCenter
-      },
-      enumerable: true
-    },
-    eye: {
-      get: function() {
-        return view.computedEye
-      },
-      set: function(neye) {
-        view.lookAt(view.lastT(), null, neye)
-        return view.computedEye
-      },
-      enumerable: true
-    },
-    up: {
-      get: function() {
-        return view.computedUp
-      },
-      set: function(nup) {
-        view.lookAt(view.lastT(), null, null, nup)
-        return view.computedUp
-      },
-      enumerable: true
-    },
-    distance: {
-      get: function() {
-        return distance
-      },
-      set: function(d) {
-        view.setDistance(view.lastT(), d)
-        return d
-      },
-      enumerable: true
-    },
-    distanceLimits: {
-      get: function() {
-        return view.getDistanceLimits(limits)
-      },
-      set: function(v) {
-        view.setDistanceLimits(v)
-        return v
-      },
-      enumerable: true
-    }
-  })
-
-  element.addEventListener('contextmenu', function(ev) {
-    ev.preventDefault()
-    return false
-  })
-
-  var lastX = 0, lastY = 0, lastMods = {shift: false, control: false, alt: false, meta: false}
-  mouseChange(element, handleInteraction)
-
-  //enable simple touch interactions
-  element.addEventListener('touchstart', function (ev) {
-    var xy = mouseOffset(ev.changedTouches[0], element)
-    handleInteraction(0, xy[0], xy[1], lastMods)
-    handleInteraction(1, xy[0], xy[1], lastMods)
-
-    ev.preventDefault()
-  }, hasPassive ? {passive: false} : false)
-
-  element.addEventListener('touchmove', function (ev) {
-    var xy = mouseOffset(ev.changedTouches[0], element)
-    handleInteraction(1, xy[0], xy[1], lastMods)
-
-    ev.preventDefault()
-  }, hasPassive ? {passive: false} : false)
-
-  element.addEventListener('touchend', function (ev) {
-    var xy = mouseOffset(ev.changedTouches[0], element)
-    handleInteraction(0, lastX, lastY, lastMods)
-
-    ev.preventDefault()
-  }, hasPassive ? {passive: false} : false)
-
-  function handleInteraction (buttons, x, y, mods) {
-    var scale = 1.0 / element.clientHeight
-    var dx    = scale * (x - lastX)
-    var dy    = scale * (y - lastY)
-
-    var flipX = camera.flipX ? 1 : -1
-    var flipY = camera.flipY ? 1 : -1
-
-    var drot  = Math.PI * camera.rotateSpeed
-
-    var t = now()
-
-    if(buttons & 1) {
-      if(mods.shift) {
-        view.rotate(t, 0, 0, -dx * drot)
-      } else {
-        view.rotate(t, flipX * drot * dx, -flipY * drot * dy, 0)
-      }
-    } else if(buttons & 2) {
-      view.pan(t, -camera.translateSpeed * dx * distance, camera.translateSpeed * dy * distance, 0)
-    } else if(buttons & 4) {
-      var kzoom = camera.zoomSpeed * dy / window.innerHeight * (t - view.lastT()) * 50.0
-      view.pan(t, 0, 0, distance * (Math.exp(kzoom) - 1))
-    }
-
-    lastX = x
-    lastY = y
-    lastMods = mods
-  }
-
-  mouseWheel(element, function(dx, dy, dz) {
-    var flipX = camera.flipX ? 1 : -1
-    var flipY = camera.flipY ? 1 : -1
-    var t = now()
-    if(Math.abs(dx) > Math.abs(dy)) {
-      view.rotate(t, 0, 0, -dx * flipX * Math.PI * camera.rotateSpeed / window.innerWidth)
-    } else {
-      var kzoom = camera.zoomSpeed * flipY * dy / window.innerHeight * (t - view.lastT()) / 100.0
-      view.pan(t, 0, 0, distance * (Math.exp(kzoom) - 1))
-    }
-  }, true)
-
-  return camera
-}
-
-
-/***/ }),
-/* 33 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {module.exports =
-  global.performance &&
-  global.performance.now ? function now() {
-    return performance.now()
-  } : Date.now || function now() {
-    return +new Date
-  }
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34)))
-
-/***/ }),
-/* 34 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 35 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = createViewController
-
-var createTurntable = __webpack_require__(36)
-var createOrbit     = __webpack_require__(39)
-var createMatrix    = __webpack_require__(42)
-
-function ViewController(controllers, mode) {
-  this._controllerNames = Object.keys(controllers)
-  this._controllerList = this._controllerNames.map(function(n) {
-    return controllers[n]
-  })
-  this._mode   = mode
-  this._active = controllers[mode]
-  if(!this._active) {
-    this._mode   = 'turntable'
-    this._active = controllers.turntable
-  }
-  this.modes = this._controllerNames
-  this.computedMatrix = this._active.computedMatrix
-  this.computedEye    = this._active.computedEye
-  this.computedUp     = this._active.computedUp
-  this.computedCenter = this._active.computedCenter
-  this.computedRadius = this._active.computedRadius
-}
-
-var proto = ViewController.prototype
-
-var COMMON_METHODS = [
-  ['flush', 1],
-  ['idle', 1],
-  ['lookAt', 4],
-  ['rotate', 4],
-  ['pan', 4],
-  ['translate', 4],
-  ['setMatrix', 2],
-  ['setDistanceLimits', 2],
-  ['setDistance', 2]
-]
-
-COMMON_METHODS.forEach(function(method) {
-  var name = method[0]
-  var argNames = []
-  for(var i=0; i<method[1]; ++i) {
-    argNames.push('a'+i)
-  }
-  var code = 'var cc=this._controllerList;for(var i=0;i<cc.length;++i){cc[i].'+method[0]+'('+argNames.join()+')}'
-  proto[name] = Function.apply(null, argNames.concat(code))
-})
-
-proto.recalcMatrix = function(t) {
-  this._active.recalcMatrix(t)
-}
-
-proto.getDistance = function(t) {
-  return this._active.getDistance(t)
-}
-proto.getDistanceLimits = function(out) {
-  return this._active.getDistanceLimits(out)
-}
-
-proto.lastT = function() {
-  return this._active.lastT()
-}
-
-proto.setMode = function(mode) {
-  if(mode === this._mode) {
-    return
-  }
-  var idx = this._controllerNames.indexOf(mode)
-  if(idx < 0) {
-    return
-  }
-  var prev  = this._active
-  var next  = this._controllerList[idx]
-  var lastT = Math.max(prev.lastT(), next.lastT())
-
-  prev.recalcMatrix(lastT)
-  next.setMatrix(lastT, prev.computedMatrix)
-  
-  this._active = next
-  this._mode   = mode
-
-  //Update matrix properties
-  this.computedMatrix = this._active.computedMatrix
-  this.computedEye    = this._active.computedEye
-  this.computedUp     = this._active.computedUp
-  this.computedCenter = this._active.computedCenter
-  this.computedRadius = this._active.computedRadius
-}
-
-proto.getMode = function() {
-  return this._mode
-}
-
-function createViewController(options) {
-  options = options || {}
-
-  var eye       = options.eye    || [0,0,1]
-  var center    = options.center || [0,0,0]
-  var up        = options.up     || [0,1,0]
-  var limits    = options.distanceLimits || [0, Infinity]
-  var mode      = options.mode   || 'turntable'
-
-  var turntable = createTurntable()
-  var orbit     = createOrbit()
-  var matrix    = createMatrix()
-
-  turntable.setDistanceLimits(limits[0], limits[1])
-  turntable.lookAt(0, eye, center, up)
-  orbit.setDistanceLimits(limits[0], limits[1])
-  orbit.lookAt(0, eye, center, up)
-  matrix.setDistanceLimits(limits[0], limits[1])
-  matrix.lookAt(0, eye, center, up)
-
-  return new ViewController({
-    turntable: turntable,
-    orbit: orbit,
-    matrix: matrix
-  }, mode)
-}
-
-/***/ }),
-/* 36 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = createTurntableController
-
-var filterVector = __webpack_require__(8)
-var invert44     = __webpack_require__(3)
-var rotateM      = __webpack_require__(38)
-var cross        = __webpack_require__(10)
-var normalize3   = __webpack_require__(4)
-var dot3         = __webpack_require__(11)
-
-function len3(x, y, z) {
-  return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2))
-}
-
-function clamp1(x) {
-  return Math.min(1.0, Math.max(-1.0, x))
-}
-
-function findOrthoPair(v) {
-  var vx = Math.abs(v[0])
-  var vy = Math.abs(v[1])
-  var vz = Math.abs(v[2])
-
-  var u = [0,0,0]
-  if(vx > Math.max(vy, vz)) {
-    u[2] = 1
-  } else if(vy > Math.max(vx, vz)) {
-    u[0] = 1
-  } else {
-    u[1] = 1
-  }
-
-  var vv = 0
-  var uv = 0
-  for(var i=0; i<3; ++i ) {
-    vv += v[i] * v[i]
-    uv += u[i] * v[i]
-  }
-  for(var i=0; i<3; ++i) {
-    u[i] -= (uv / vv) *  v[i]
-  }
-  normalize3(u, u)
-  return u
-}
-
-function TurntableController(zoomMin, zoomMax, center, up, right, radius, theta, phi) {
-  this.center = filterVector(center)
-  this.up     = filterVector(up)
-  this.right  = filterVector(right)
-  this.radius = filterVector([radius])
-  this.angle  = filterVector([theta, phi])
-  this.angle.bounds = [[-Infinity,-Math.PI/2], [Infinity,Math.PI/2]]
-  this.setDistanceLimits(zoomMin, zoomMax)
-
-  this.computedCenter = this.center.curve(0)
-  this.computedUp     = this.up.curve(0)
-  this.computedRight  = this.right.curve(0)
-  this.computedRadius = this.radius.curve(0)
-  this.computedAngle  = this.angle.curve(0)
-  this.computedToward = [0,0,0]
-  this.computedEye    = [0,0,0]
-  this.computedMatrix = new Array(16)
-  for(var i=0; i<16; ++i) {
-    this.computedMatrix[i] = 0.5
-  }
-
-  this.recalcMatrix(0)
-}
-
-var proto = TurntableController.prototype
-
-proto.setDistanceLimits = function(minDist, maxDist) {
-  if(minDist > 0) {
-    minDist = Math.log(minDist)
-  } else {
-    minDist = -Infinity
-  }
-  if(maxDist > 0) {
-    maxDist = Math.log(maxDist)
-  } else {
-    maxDist = Infinity
-  }
-  maxDist = Math.max(maxDist, minDist)
-  this.radius.bounds[0][0] = minDist
-  this.radius.bounds[1][0] = maxDist
-}
-
-proto.getDistanceLimits = function(out) {
-  var bounds = this.radius.bounds[0]
-  if(out) {
-    out[0] = Math.exp(bounds[0][0])
-    out[1] = Math.exp(bounds[1][0])
-    return out
-  }
-  return [ Math.exp(bounds[0][0]), Math.exp(bounds[1][0]) ]
-}
-
-proto.recalcMatrix = function(t) {
-  //Recompute curves
-  this.center.curve(t)
-  this.up.curve(t)
-  this.right.curve(t)
-  this.radius.curve(t)
-  this.angle.curve(t)
-
-  //Compute frame for camera matrix
-  var up     = this.computedUp
-  var right  = this.computedRight
-  var uu = 0.0
-  var ur = 0.0
-  for(var i=0; i<3; ++i) {
-    ur += up[i] * right[i]
-    uu += up[i] * up[i]
-  }
-  var ul = Math.sqrt(uu)
-  var rr = 0.0
-  for(var i=0; i<3; ++i) {
-    right[i] -= up[i] * ur / uu
-    rr       += right[i] * right[i]
-    up[i]    /= ul
-  }
-  var rl = Math.sqrt(rr)
-  for(var i=0; i<3; ++i) {
-    right[i] /= rl
-  }
-
-  //Compute toward vector
-  var toward = this.computedToward
-  cross(toward, up, right)
-  normalize3(toward, toward)
-
-  //Compute angular parameters
-  var radius = Math.exp(this.computedRadius[0])
-  var theta  = this.computedAngle[0]
-  var phi    = this.computedAngle[1]
-
-  var ctheta = Math.cos(theta)
-  var stheta = Math.sin(theta)
-  var cphi   = Math.cos(phi)
-  var sphi   = Math.sin(phi)
-
-  var center = this.computedCenter
-
-  var wx = ctheta * cphi 
-  var wy = stheta * cphi
-  var wz = sphi
-
-  var sx = -ctheta * sphi
-  var sy = -stheta * sphi
-  var sz = cphi
-
-  var eye = this.computedEye
-  var mat = this.computedMatrix
-  for(var i=0; i<3; ++i) {
-    var x      = wx * right[i] + wy * toward[i] + wz * up[i]
-    mat[4*i+1] = sx * right[i] + sy * toward[i] + sz * up[i]
-    mat[4*i+2] = x
-    mat[4*i+3] = 0.0
-  }
-
-  var ax = mat[1]
-  var ay = mat[5]
-  var az = mat[9]
-  var bx = mat[2]
-  var by = mat[6]
-  var bz = mat[10]
-  var cx = ay * bz - az * by
-  var cy = az * bx - ax * bz
-  var cz = ax * by - ay * bx
-  var cl = len3(cx, cy, cz)
-  cx /= cl
-  cy /= cl
-  cz /= cl
-  mat[0] = cx
-  mat[4] = cy
-  mat[8] = cz
-
-  for(var i=0; i<3; ++i) {
-    eye[i] = center[i] + mat[2+4*i]*radius
-  }
-
-  for(var i=0; i<3; ++i) {
-    var rr = 0.0
-    for(var j=0; j<3; ++j) {
-      rr += mat[i+4*j] * eye[j]
-    }
-    mat[12+i] = -rr
-  }
-  mat[15] = 1.0
-}
-
-proto.getMatrix = function(t, result) {
-  this.recalcMatrix(t)
-  var mat = this.computedMatrix
-  if(result) {
-    for(var i=0; i<16; ++i) {
-      result[i] = mat[i]
-    }
-    return result
-  }
-  return mat
-}
-
-var zAxis = [0,0,0]
-proto.rotate = function(t, dtheta, dphi, droll) {
-  this.angle.move(t, dtheta, dphi)
-  if(droll) {
-    this.recalcMatrix(t)
-
-    var mat = this.computedMatrix
-    zAxis[0] = mat[2]
-    zAxis[1] = mat[6]
-    zAxis[2] = mat[10]
-
-    var up     = this.computedUp
-    var right  = this.computedRight
-    var toward = this.computedToward
-
-    for(var i=0; i<3; ++i) {
-      mat[4*i]   = up[i]
-      mat[4*i+1] = right[i]
-      mat[4*i+2] = toward[i]
-    }
-    rotateM(mat, mat, droll, zAxis)
-    for(var i=0; i<3; ++i) {
-      up[i] =    mat[4*i]
-      right[i] = mat[4*i+1]
-    }
-
-    this.up.set(t, up[0], up[1], up[2])
-    this.right.set(t, right[0], right[1], right[2])
-  }
-}
-
-proto.pan = function(t, dx, dy, dz) {
-  dx = dx || 0.0
-  dy = dy || 0.0
-  dz = dz || 0.0
-
-  this.recalcMatrix(t)
-  var mat = this.computedMatrix
-
-  var dist = Math.exp(this.computedRadius[0])
-
-  var ux = mat[1]
-  var uy = mat[5]
-  var uz = mat[9]
-  var ul = len3(ux, uy, uz)
-  ux /= ul
-  uy /= ul
-  uz /= ul
-
-  var rx = mat[0]
-  var ry = mat[4]
-  var rz = mat[8]
-  var ru = rx * ux + ry * uy + rz * uz
-  rx -= ux * ru
-  ry -= uy * ru
-  rz -= uz * ru
-  var rl = len3(rx, ry, rz)
-  rx /= rl
-  ry /= rl
-  rz /= rl
-
-  var vx = rx * dx + ux * dy
-  var vy = ry * dx + uy * dy
-  var vz = rz * dx + uz * dy
-  this.center.move(t, vx, vy, vz)
-
-  //Update z-component of radius
-  var radius = Math.exp(this.computedRadius[0])
-  radius = Math.max(1e-4, radius + dz)
-  this.radius.set(t, Math.log(radius))
-}
-
-proto.translate = function(t, dx, dy, dz) {
-  this.center.move(t,
-    dx||0.0,
-    dy||0.0,
-    dz||0.0)
-}
-
-//Recenters the coordinate axes
-proto.setMatrix = function(t, mat, axes, noSnap) {
-  
-  //Get the axes for tare
-  var ushift = 1
-  if(typeof axes === 'number') {
-    ushift = (axes)|0
-  } 
-  if(ushift < 0 || ushift > 3) {
-    ushift = 1
-  }
-  var vshift = (ushift + 2) % 3
-  var fshift = (ushift + 1) % 3
-
-  //Recompute state for new t value
-  if(!mat) { 
-    this.recalcMatrix(t)
-    mat = this.computedMatrix
-  }
-
-  //Get right and up vectors
-  var ux = mat[ushift]
-  var uy = mat[ushift+4]
-  var uz = mat[ushift+8]
-  if(!noSnap) {
-    var ul = len3(ux, uy, uz)
-    ux /= ul
-    uy /= ul
-    uz /= ul
-  } else {
-    var ax = Math.abs(ux)
-    var ay = Math.abs(uy)
-    var az = Math.abs(uz)
-    var am = Math.max(ax,ay,az)
-    if(ax === am) {
-      ux = (ux < 0) ? -1 : 1
-      uy = uz = 0
-    } else if(az === am) {
-      uz = (uz < 0) ? -1 : 1
-      ux = uy = 0
-    } else {
-      uy = (uy < 0) ? -1 : 1
-      ux = uz = 0
-    }
-  }
-
-  var rx = mat[vshift]
-  var ry = mat[vshift+4]
-  var rz = mat[vshift+8]
-  var ru = rx * ux + ry * uy + rz * uz
-  rx -= ux * ru
-  ry -= uy * ru
-  rz -= uz * ru
-  var rl = len3(rx, ry, rz)
-  rx /= rl
-  ry /= rl
-  rz /= rl
-  
-  var fx = uy * rz - uz * ry
-  var fy = uz * rx - ux * rz
-  var fz = ux * ry - uy * rx
-  var fl = len3(fx, fy, fz)
-  fx /= fl
-  fy /= fl
-  fz /= fl
-
-  this.center.jump(t, ex, ey, ez)
-  this.radius.idle(t)
-  this.up.jump(t, ux, uy, uz)
-  this.right.jump(t, rx, ry, rz)
-
-  var phi, theta
-  if(ushift === 2) {
-    var cx = mat[1]
-    var cy = mat[5]
-    var cz = mat[9]
-    var cr = cx * rx + cy * ry + cz * rz
-    var cf = cx * fx + cy * fy + cz * fz
-    if(tu < 0) {
-      phi = -Math.PI/2
-    } else {
-      phi = Math.PI/2
-    }
-    theta = Math.atan2(cf, cr)
-  } else {
-    var tx = mat[2]
-    var ty = mat[6]
-    var tz = mat[10]
-    var tu = tx * ux + ty * uy + tz * uz
-    var tr = tx * rx + ty * ry + tz * rz
-    var tf = tx * fx + ty * fy + tz * fz
-
-    phi = Math.asin(clamp1(tu))
-    theta = Math.atan2(tf, tr)
-  }
-
-  this.angle.jump(t, theta, phi)
-
-  this.recalcMatrix(t)
-  var dx = mat[2]
-  var dy = mat[6]
-  var dz = mat[10]
-
-  var imat = this.computedMatrix
-  invert44(imat, mat)
-  var w  = imat[15]
-  var ex = imat[12] / w
-  var ey = imat[13] / w
-  var ez = imat[14] / w
-
-  var gs = Math.exp(this.computedRadius[0])
-  this.center.jump(t, ex-dx*gs, ey-dy*gs, ez-dz*gs)
-}
-
-proto.lastT = function() {
-  return Math.max(
-    this.center.lastT(),
-    this.up.lastT(),
-    this.right.lastT(),
-    this.radius.lastT(),
-    this.angle.lastT())
-}
-
-proto.idle = function(t) {
-  this.center.idle(t)
-  this.up.idle(t)
-  this.right.idle(t)
-  this.radius.idle(t)
-  this.angle.idle(t)
-}
-
-proto.flush = function(t) {
-  this.center.flush(t)
-  this.up.flush(t)
-  this.right.flush(t)
-  this.radius.flush(t)
-  this.angle.flush(t)
-}
-
-proto.setDistance = function(t, d) {
-  if(d > 0) {
-    this.radius.set(t, Math.log(d))
-  }
-}
-
-proto.lookAt = function(t, eye, center, up) {
-  this.recalcMatrix(t)
-
-  eye    = eye    || this.computedEye
-  center = center || this.computedCenter
-  up     = up     || this.computedUp
-
-  var ux = up[0]
-  var uy = up[1]
-  var uz = up[2]
-  var ul = len3(ux, uy, uz)
-  if(ul < 1e-6) {
-    return
-  }
-  ux /= ul
-  uy /= ul
-  uz /= ul
-
-  var tx = eye[0] - center[0]
-  var ty = eye[1] - center[1]
-  var tz = eye[2] - center[2]
-  var tl = len3(tx, ty, tz)
-  if(tl < 1e-6) {
-    return
-  }
-  tx /= tl
-  ty /= tl
-  tz /= tl
-
-  var right = this.computedRight
-  var rx = right[0]
-  var ry = right[1]
-  var rz = right[2]
-  var ru = ux*rx + uy*ry + uz*rz
-  rx -= ru * ux
-  ry -= ru * uy
-  rz -= ru * uz
-  var rl = len3(rx, ry, rz)
-
-  if(rl < 0.01) {
-    rx = uy * tz - uz * ty
-    ry = uz * tx - ux * tz
-    rz = ux * ty - uy * tx
-    rl = len3(rx, ry, rz)
-    if(rl < 1e-6) {
-      return
-    }
-  }
-  rx /= rl
-  ry /= rl
-  rz /= rl
-
-  this.up.set(t, ux, uy, uz)
-  this.right.set(t, rx, ry, rz)
-  this.center.set(t, center[0], center[1], center[2])
-  this.radius.set(t, Math.log(tl))
-
-  var fx = uy * rz - uz * ry
-  var fy = uz * rx - ux * rz
-  var fz = ux * ry - uy * rx
-  var fl = len3(fx, fy, fz)
-  fx /= fl
-  fy /= fl
-  fz /= fl
-
-  var tu = ux*tx + uy*ty + uz*tz
-  var tr = rx*tx + ry*ty + rz*tz
-  var tf = fx*tx + fy*ty + fz*tz
-
-  var phi   = Math.asin(clamp1(tu))
-  var theta = Math.atan2(tf, tr)
-
-  var angleState = this.angle._state
-  var lastTheta  = angleState[angleState.length-1]
-  var lastPhi    = angleState[angleState.length-2]
-  lastTheta      = lastTheta % (2.0 * Math.PI)
-  var dp = Math.abs(lastTheta + 2.0 * Math.PI - theta)
-  var d0 = Math.abs(lastTheta - theta)
-  var dn = Math.abs(lastTheta - 2.0 * Math.PI - theta)
-  if(dp < d0) {
-    lastTheta += 2.0 * Math.PI
-  }
-  if(dn < d0) {
-    lastTheta -= 2.0 * Math.PI
-  }
-
-  this.angle.jump(this.angle.lastT(), lastTheta, lastPhi)
-  this.angle.set(t, theta, phi)
-}
-
-function createTurntableController(options) {
-  options = options || {}
-
-  var center = options.center || [0,0,0]
-  var up     = options.up     || [0,1,0]
-  var right  = options.right  || findOrthoPair(up)
-  var radius = options.radius || 1.0
-  var theta  = options.theta  || 0.0
-  var phi    = options.phi    || 0.0
-
-  center = [].slice.call(center, 0, 3)
-
-  up = [].slice.call(up, 0, 3)
-  normalize3(up, up)
-
-  right = [].slice.call(right, 0, 3)
-  normalize3(right, right)
-
-  if('eye' in options) {
-    var eye = options.eye
-    var toward = [
-      eye[0]-center[0],
-      eye[1]-center[1],
-      eye[2]-center[2]
-    ]
-    cross(right, toward, up)
-    if(len3(right[0], right[1], right[2]) < 1e-6) {
-      right = findOrthoPair(up)
-    } else {
-      normalize3(right, right)
-    }
-
-    radius = len3(toward[0], toward[1], toward[2])
-
-    var ut = dot3(up, toward) / radius
-    var rt = dot3(right, toward) / radius
-    phi    = Math.acos(ut)
-    theta  = Math.acos(rt)
-  }
-
-  //Use logarithmic coordinates for radius
-  radius = Math.log(radius)
-
-  //Return the controller
-  return new TurntableController(
-    options.zoomMin,
-    options.zoomMax,
-    center,
-    up,
-    right,
-    radius,
-    theta,
-    phi)
-}
-
-/***/ }),
-/* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function dcubicHermite(p0, v0, p1, v1, t, f) {
-  var dh00 = 6*t*t-6*t,
-      dh10 = 3*t*t-4*t + 1,
-      dh01 = -6*t*t+6*t,
-      dh11 = 3*t*t-2*t
-  if(p0.length) {
-    if(!f) {
-      f = new Array(p0.length)
-    }
-    for(var i=p0.length-1; i>=0; --i) {
-      f[i] = dh00*p0[i] + dh10*v0[i] + dh01*p1[i] + dh11*v1[i]
-    }
-    return f
-  }
-  return dh00*p0 + dh10*v0 + dh01*p1[i] + dh11*v1
-}
-
-function cubicHermite(p0, v0, p1, v1, t, f) {
-  var ti  = (t-1), t2 = t*t, ti2 = ti*ti,
-      h00 = (1+2*t)*ti2,
-      h10 = t*ti2,
-      h01 = t2*(3-2*t),
-      h11 = t2*ti
-  if(p0.length) {
-    if(!f) {
-      f = new Array(p0.length)
-    }
-    for(var i=p0.length-1; i>=0; --i) {
-      f[i] = h00*p0[i] + h10*v0[i] + h01*p1[i] + h11*v1[i]
-    }
-    return f
-  }
-  return h00*p0 + h10*v0 + h01*p1 + h11*v1
-}
-
-module.exports = cubicHermite
-module.exports.derivative = dcubicHermite
-
-/***/ }),
-/* 38 */
-/***/ (function(module, exports) {
-
-module.exports = rotate;
-
-/**
- * Rotates a mat4 by the given angle
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @param {vec3} axis the axis to rotate around
- * @returns {mat4} out
- */
-function rotate(out, a, rad, axis) {
-    var x = axis[0], y = axis[1], z = axis[2],
-        len = Math.sqrt(x * x + y * y + z * z),
-        s, c, t,
-        a00, a01, a02, a03,
-        a10, a11, a12, a13,
-        a20, a21, a22, a23,
-        b00, b01, b02,
-        b10, b11, b12,
-        b20, b21, b22;
-
-    if (Math.abs(len) < 0.000001) { return null; }
-    
-    len = 1 / len;
-    x *= len;
-    y *= len;
-    z *= len;
-
-    s = Math.sin(rad);
-    c = Math.cos(rad);
-    t = 1 - c;
-
-    a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
-    a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
-    a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
-
-    // Construct the elements of the rotation matrix
-    b00 = x * x * t + c; b01 = y * x * t + z * s; b02 = z * x * t - y * s;
-    b10 = x * y * t - z * s; b11 = y * y * t + c; b12 = z * y * t + x * s;
-    b20 = x * z * t + y * s; b21 = y * z * t - x * s; b22 = z * z * t + c;
-
-    // Perform rotation-specific matrix multiplication
-    out[0] = a00 * b00 + a10 * b01 + a20 * b02;
-    out[1] = a01 * b00 + a11 * b01 + a21 * b02;
-    out[2] = a02 * b00 + a12 * b01 + a22 * b02;
-    out[3] = a03 * b00 + a13 * b01 + a23 * b02;
-    out[4] = a00 * b10 + a10 * b11 + a20 * b12;
-    out[5] = a01 * b10 + a11 * b11 + a21 * b12;
-    out[6] = a02 * b10 + a12 * b11 + a22 * b12;
-    out[7] = a03 * b10 + a13 * b11 + a23 * b12;
-    out[8] = a00 * b20 + a10 * b21 + a20 * b22;
-    out[9] = a01 * b20 + a11 * b21 + a21 * b22;
-    out[10] = a02 * b20 + a12 * b21 + a22 * b22;
-    out[11] = a03 * b20 + a13 * b21 + a23 * b22;
-
-    if (a !== out) { // If the source and destination differ, copy the unchanged last row
-        out[12] = a[12];
-        out[13] = a[13];
-        out[14] = a[14];
-        out[15] = a[15];
-    }
-    return out;
-};
-
-/***/ }),
 /* 39 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = createOrbitController
-
-var filterVector  = __webpack_require__(8)
-var lookAt        = __webpack_require__(12)
-var mat4FromQuat  = __webpack_require__(40)
-var invert44      = __webpack_require__(3)
-var quatFromFrame = __webpack_require__(41)
-
-function len3(x,y,z) {
-  return Math.sqrt(Math.pow(x,2) + Math.pow(y,2) + Math.pow(z,2))
-}
-
-function len4(w,x,y,z) {
-  return Math.sqrt(Math.pow(w,2) + Math.pow(x,2) + Math.pow(y,2) + Math.pow(z,2))
-}
-
-function normalize4(out, a) {
-  var ax = a[0]
-  var ay = a[1]
-  var az = a[2]
-  var aw = a[3]
-  var al = len4(ax, ay, az, aw)
-  if(al > 1e-6) {
-    out[0] = ax/al
-    out[1] = ay/al
-    out[2] = az/al
-    out[3] = aw/al
-  } else {
-    out[0] = out[1] = out[2] = 0.0
-    out[3] = 1.0
-  }
-}
-
-function OrbitCameraController(initQuat, initCenter, initRadius) {
-  this.radius    = filterVector([initRadius])
-  this.center    = filterVector(initCenter)
-  this.rotation  = filterVector(initQuat)
-
-  this.computedRadius   = this.radius.curve(0)
-  this.computedCenter   = this.center.curve(0)
-  this.computedRotation = this.rotation.curve(0)
-  this.computedUp       = [0.1,0,0]
-  this.computedEye      = [0.1,0,0]
-  this.computedMatrix   = [0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-
-  this.recalcMatrix(0)
-}
-
-var proto = OrbitCameraController.prototype
-
-proto.lastT = function() {
-  return Math.max(
-    this.radius.lastT(),
-    this.center.lastT(),
-    this.rotation.lastT())
-}
-
-proto.recalcMatrix = function(t) {
-  this.radius.curve(t)
-  this.center.curve(t)
-  this.rotation.curve(t)
-
-  var quat = this.computedRotation
-  normalize4(quat, quat)
-
-  var mat = this.computedMatrix
-  mat4FromQuat(mat, quat)
-
-  var center = this.computedCenter
-  var eye    = this.computedEye
-  var up     = this.computedUp
-  var radius = Math.exp(this.computedRadius[0])
-
-  eye[0] = center[0] + radius * mat[2]
-  eye[1] = center[1] + radius * mat[6]
-  eye[2] = center[2] + radius * mat[10]
-  up[0] = mat[1]
-  up[1] = mat[5]
-  up[2] = mat[9]
-
-  for(var i=0; i<3; ++i) {
-    var rr = 0.0
-    for(var j=0; j<3; ++j) {
-      rr += mat[i+4*j] * eye[j]
-    }
-    mat[12+i] = -rr
-  }
-}
-
-proto.getMatrix = function(t, result) {
-  this.recalcMatrix(t)
-  var m = this.computedMatrix
-  if(result) {
-    for(var i=0; i<16; ++i) {
-      result[i] = m[i]
-    }
-    return result
-  }
-  return m
-}
-
-proto.idle = function(t) {
-  this.center.idle(t)
-  this.radius.idle(t)
-  this.rotation.idle(t)
-}
-
-proto.flush = function(t) {
-  this.center.flush(t)
-  this.radius.flush(t)
-  this.rotation.flush(t)
-}
-
-proto.pan = function(t, dx, dy, dz) {
-  dx = dx || 0.0
-  dy = dy || 0.0
-  dz = dz || 0.0
-
-  this.recalcMatrix(t)
-  var mat = this.computedMatrix
-
-  var ux = mat[1]
-  var uy = mat[5]
-  var uz = mat[9]
-  var ul = len3(ux, uy, uz)
-  ux /= ul
-  uy /= ul
-  uz /= ul
-
-  var rx = mat[0]
-  var ry = mat[4]
-  var rz = mat[8]
-  var ru = rx * ux + ry * uy + rz * uz
-  rx -= ux * ru
-  ry -= uy * ru
-  rz -= uz * ru
-  var rl = len3(rx, ry, rz)
-  rx /= rl
-  ry /= rl
-  rz /= rl
-
-  var fx = mat[2]
-  var fy = mat[6]
-  var fz = mat[10]
-  var fu = fx * ux + fy * uy + fz * uz
-  var fr = fx * rx + fy * ry + fz * rz
-  fx -= fu * ux + fr * rx
-  fy -= fu * uy + fr * ry
-  fz -= fu * uz + fr * rz
-  var fl = len3(fx, fy, fz)
-  fx /= fl
-  fy /= fl
-  fz /= fl
-
-  var vx = rx * dx + ux * dy
-  var vy = ry * dx + uy * dy
-  var vz = rz * dx + uz * dy
-
-  this.center.move(t, vx, vy, vz)
-
-  //Update z-component of radius
-  var radius = Math.exp(this.computedRadius[0])
-  radius = Math.max(1e-4, radius + dz)
-  this.radius.set(t, Math.log(radius))
-}
-
-proto.rotate = function(t, dx, dy, dz) {
-  this.recalcMatrix(t)
-
-  dx = dx||0.0
-  dy = dy||0.0
-
-  var mat = this.computedMatrix
-
-  var rx = mat[0]
-  var ry = mat[4]
-  var rz = mat[8]
-
-  var ux = mat[1]
-  var uy = mat[5]
-  var uz = mat[9]
-
-  var fx = mat[2]
-  var fy = mat[6]
-  var fz = mat[10]
-
-  var qx = dx * rx + dy * ux
-  var qy = dx * ry + dy * uy
-  var qz = dx * rz + dy * uz
-
-  var bx = -(fy * qz - fz * qy)
-  var by = -(fz * qx - fx * qz)
-  var bz = -(fx * qy - fy * qx)  
-  var bw = Math.sqrt(Math.max(0.0, 1.0 - Math.pow(bx,2) - Math.pow(by,2) - Math.pow(bz,2)))
-  var bl = len4(bx, by, bz, bw)
-  if(bl > 1e-6) {
-    bx /= bl
-    by /= bl
-    bz /= bl
-    bw /= bl
-  } else {
-    bx = by = bz = 0.0
-    bw = 1.0
-  }
-
-  var rotation = this.computedRotation
-  var ax = rotation[0]
-  var ay = rotation[1]
-  var az = rotation[2]
-  var aw = rotation[3]
-
-  var cx = ax*bw + aw*bx + ay*bz - az*by
-  var cy = ay*bw + aw*by + az*bx - ax*bz
-  var cz = az*bw + aw*bz + ax*by - ay*bx
-  var cw = aw*bw - ax*bx - ay*by - az*bz
-  
-  //Apply roll
-  if(dz) {
-    bx = fx
-    by = fy
-    bz = fz
-    var s = Math.sin(dz) / len3(bx, by, bz)
-    bx *= s
-    by *= s
-    bz *= s
-    bw = Math.cos(dx)
-    cx = cx*bw + cw*bx + cy*bz - cz*by
-    cy = cy*bw + cw*by + cz*bx - cx*bz
-    cz = cz*bw + cw*bz + cx*by - cy*bx
-    cw = cw*bw - cx*bx - cy*by - cz*bz
-  }
-
-  var cl = len4(cx, cy, cz, cw)
-  if(cl > 1e-6) {
-    cx /= cl
-    cy /= cl
-    cz /= cl
-    cw /= cl
-  } else {
-    cx = cy = cz = 0.0
-    cw = 1.0
-  }
-
-  this.rotation.set(t, cx, cy, cz, cw)
-}
-
-proto.lookAt = function(t, eye, center, up) {
-  this.recalcMatrix(t)
-
-  center = center || this.computedCenter
-  eye    = eye    || this.computedEye
-  up     = up     || this.computedUp
-
-  var mat = this.computedMatrix
-  lookAt(mat, eye, center, up)
-
-  var rotation = this.computedRotation
-  quatFromFrame(rotation,
-    mat[0], mat[1], mat[2],
-    mat[4], mat[5], mat[6],
-    mat[8], mat[9], mat[10])
-  normalize4(rotation, rotation)
-  this.rotation.set(t, rotation[0], rotation[1], rotation[2], rotation[3])
-
-  var fl = 0.0
-  for(var i=0; i<3; ++i) {
-    fl += Math.pow(center[i] - eye[i], 2)
-  }
-  this.radius.set(t, 0.5 * Math.log(Math.max(fl, 1e-6)))
-
-  this.center.set(t, center[0], center[1], center[2])
-}
-
-proto.translate = function(t, dx, dy, dz) {
-  this.center.move(t,
-    dx||0.0,
-    dy||0.0,
-    dz||0.0)
-}
-
-proto.setMatrix = function(t, matrix) {
-
-  var rotation = this.computedRotation
-  quatFromFrame(rotation,
-    matrix[0], matrix[1], matrix[2],
-    matrix[4], matrix[5], matrix[6],
-    matrix[8], matrix[9], matrix[10])
-  normalize4(rotation, rotation)
-  this.rotation.set(t, rotation[0], rotation[1], rotation[2], rotation[3])
-
-  var mat = this.computedMatrix
-  invert44(mat, matrix)
-  var w = mat[15]
-  if(Math.abs(w) > 1e-6) {
-    var cx = mat[12]/w
-    var cy = mat[13]/w
-    var cz = mat[14]/w
-
-    this.recalcMatrix(t)  
-    var r = Math.exp(this.computedRadius[0])
-    this.center.set(t, cx-mat[2]*r, cy-mat[6]*r, cz-mat[10]*r)
-    this.radius.idle(t)
-  } else {
-    this.center.idle(t)
-    this.radius.idle(t)
-  }
-}
-
-proto.setDistance = function(t, d) {
-  if(d > 0) {
-    this.radius.set(t, Math.log(d))
-  }
-}
-
-proto.setDistanceLimits = function(lo, hi) {
-  if(lo > 0) {
-    lo = Math.log(lo)
-  } else {
-    lo = -Infinity    
-  }
-  if(hi > 0) {
-    hi = Math.log(hi)
-  } else {
-    hi = Infinity
-  }
-  hi = Math.max(hi, lo)
-  this.radius.bounds[0][0] = lo
-  this.radius.bounds[1][0] = hi
-}
-
-proto.getDistanceLimits = function(out) {
-  var bounds = this.radius.bounds
-  if(out) {
-    out[0] = Math.exp(bounds[0][0])
-    out[1] = Math.exp(bounds[1][0])
-    return out
-  }
-  return [ Math.exp(bounds[0][0]), Math.exp(bounds[1][0]) ]
-}
-
-proto.toJSON = function() {
-  this.recalcMatrix(this.lastT())
-  return {
-    center:   this.computedCenter.slice(),
-    rotation: this.computedRotation.slice(),
-    distance: Math.log(this.computedRadius[0]),
-    zoomMin:  this.radius.bounds[0][0],
-    zoomMax:  this.radius.bounds[1][0]
-  }
-}
-
-proto.fromJSON = function(options) {
-  var t = this.lastT()
-  var c = options.center
-  if(c) {
-    this.center.set(t, c[0], c[1], c[2])
-  }
-  var r = options.rotation
-  if(r) {
-    this.rotation.set(t, r[0], r[1], r[2], r[3])
-  }
-  var d = options.distance
-  if(d && d > 0) {
-    this.radius.set(t, Math.log(d))
-  }
-  this.setDistanceLimits(options.zoomMin, options.zoomMax)
-}
-
-function createOrbitController(options) {
-  options = options || {}
-  var center   = options.center   || [0,0,0]
-  var rotation = options.rotation || [0,0,0,1]
-  var radius   = options.radius   || 1.0
-
-  center = [].slice.call(center, 0, 3)
-  rotation = [].slice.call(rotation, 0, 4)
-  normalize4(rotation, rotation)
-
-  var result = new OrbitCameraController(
-    rotation,
-    center,
-    Math.log(radius))
-
-  result.setDistanceLimits(options.zoomMin, options.zoomMax)
-
-  if('eye' in options || 'up' in options) {
-    result.lookAt(0, options.eye, options.center, options.up)
-  }
-
-  return result
-}
-
-/***/ }),
-/* 40 */
-/***/ (function(module, exports) {
-
-module.exports = fromQuat;
-
-/**
- * Creates a matrix from a quaternion rotation.
- *
- * @param {mat4} out mat4 receiving operation result
- * @param {quat4} q Rotation quaternion
- * @returns {mat4} out
- */
-function fromQuat(out, q) {
-    var x = q[0], y = q[1], z = q[2], w = q[3],
-        x2 = x + x,
-        y2 = y + y,
-        z2 = z + z,
-
-        xx = x * x2,
-        yx = y * x2,
-        yy = y * y2,
-        zx = z * x2,
-        zy = z * y2,
-        zz = z * z2,
-        wx = w * x2,
-        wy = w * y2,
-        wz = w * z2;
-
-    out[0] = 1 - yy - zz;
-    out[1] = yx + wz;
-    out[2] = zx - wy;
-    out[3] = 0;
-
-    out[4] = yx - wz;
-    out[5] = 1 - xx - zz;
-    out[6] = zy + wx;
-    out[7] = 0;
-
-    out[8] = zx + wy;
-    out[9] = zy - wx;
-    out[10] = 1 - xx - yy;
-    out[11] = 0;
-
-    out[12] = 0;
-    out[13] = 0;
-    out[14] = 0;
-    out[15] = 1;
-
-    return out;
-};
-
-/***/ }),
-/* 41 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = quatFromFrame
-
-function quatFromFrame(
-  out,
-  rx, ry, rz,
-  ux, uy, uz,
-  fx, fy, fz) {
-  var tr = rx + uy + fz
-  if(l > 0) {
-    var l = Math.sqrt(tr + 1.0)
-    out[0] = 0.5 * (uz - fy) / l
-    out[1] = 0.5 * (fx - rz) / l
-    out[2] = 0.5 * (ry - uy) / l
-    out[3] = 0.5 * l
-  } else {
-    var tf = Math.max(rx, uy, fz)
-    var l = Math.sqrt(2 * tf - tr + 1.0)
-    if(rx >= tf) {
-      //x y z  order
-      out[0] = 0.5 * l
-      out[1] = 0.5 * (ux + ry) / l
-      out[2] = 0.5 * (fx + rz) / l
-      out[3] = 0.5 * (uz - fy) / l
-    } else if(uy >= tf) {
-      //y z x  order
-      out[0] = 0.5 * (ry + ux) / l
-      out[1] = 0.5 * l
-      out[2] = 0.5 * (fy + uz) / l
-      out[3] = 0.5 * (fx - rz) / l
-    } else {
-      //z x y  order
-      out[0] = 0.5 * (rz + fx) / l
-      out[1] = 0.5 * (uz + fy) / l
-      out[2] = 0.5 * l
-      out[3] = 0.5 * (ry - ux) / l
-    }
-  }
-  return out
-}
-
-/***/ }),
-/* 42 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var bsearch   = __webpack_require__(9)
-var m4interp  = __webpack_require__(43)
-var invert44  = __webpack_require__(3)
-var rotateX   = __webpack_require__(55)
-var rotateY   = __webpack_require__(56)
-var rotateZ   = __webpack_require__(57)
-var lookAt    = __webpack_require__(12)
-var translate = __webpack_require__(14)
-var scale     = __webpack_require__(16)
-var normalize = __webpack_require__(4)
-
-var DEFAULT_CENTER = [0,0,0]
-
-module.exports = createMatrixCameraController
-
-function MatrixCameraController(initialMatrix) {
-  this._components    = initialMatrix.slice()
-  this._time          = [0]
-  this.prevMatrix     = initialMatrix.slice()
-  this.nextMatrix     = initialMatrix.slice()
-  this.computedMatrix = initialMatrix.slice()
-  this.computedInverse = initialMatrix.slice()
-  this.computedEye    = [0,0,0]
-  this.computedUp     = [0,0,0]
-  this.computedCenter = [0,0,0]
-  this.computedRadius = [0]
-  this._limits        = [-Infinity, Infinity]
-}
-
-var proto = MatrixCameraController.prototype
-
-proto.recalcMatrix = function(t) {
-  var time = this._time
-  var tidx = bsearch.le(time, t)
-  var mat = this.computedMatrix
-  if(tidx < 0) {
-    return
-  }
-  var comps = this._components
-  if(tidx === time.length-1) {
-    var ptr = 16*tidx
-    for(var i=0; i<16; ++i) {
-      mat[i] = comps[ptr++]
-    }
-  } else {
-    var dt = (time[tidx+1] - time[tidx])
-    var ptr = 16*tidx
-    var prev = this.prevMatrix
-    var allEqual = true
-    for(var i=0; i<16; ++i) {
-      prev[i] = comps[ptr++]
-    }
-    var next = this.nextMatrix
-    for(var i=0; i<16; ++i) {
-      next[i] = comps[ptr++]
-      allEqual = allEqual && (prev[i] === next[i])
-    }
-    if(dt < 1e-6 || allEqual) {
-      for(var i=0; i<16; ++i) {
-        mat[i] = prev[i]
-      }
-    } else {
-      m4interp(mat, prev, next, (t - time[tidx])/dt)
-    }
-  }
-
-  var up = this.computedUp
-  up[0] = mat[1]
-  up[1] = mat[5]
-  up[2] = mat[9]
-  normalize(up, up)
-
-  var imat = this.computedInverse
-  invert44(imat, mat)
-  var eye = this.computedEye
-  var w = imat[15]
-  eye[0] = imat[12]/w
-  eye[1] = imat[13]/w
-  eye[2] = imat[14]/w
-
-  var center = this.computedCenter
-  var radius = Math.exp(this.computedRadius[0])
-  for(var i=0; i<3; ++i) {
-    center[i] = eye[i] - mat[2+4*i] * radius
-  }
-}
-
-proto.idle = function(t) {
-  if(t < this.lastT()) {
-    return
-  }
-  var mc = this._components
-  var ptr = mc.length-16
-  for(var i=0; i<16; ++i) {
-    mc.push(mc[ptr++])
-  }
-  this._time.push(t)
-}
-
-proto.flush = function(t) {
-  var idx = bsearch.gt(this._time, t) - 2
-  if(idx < 0) {
-    return
-  }
-  this._time.splice(0, idx)
-  this._components.splice(0, 16*idx)
-}
-
-proto.lastT = function() {
-  return this._time[this._time.length-1]
-}
-
-proto.lookAt = function(t, eye, center, up) {
-  this.recalcMatrix(t)
-  eye    = eye || this.computedEye
-  center = center || DEFAULT_CENTER
-  up     = up || this.computedUp
-  this.setMatrix(t, lookAt(this.computedMatrix, eye, center, up))
-  var d2 = 0.0
-  for(var i=0; i<3; ++i) {
-    d2 += Math.pow(center[i] - eye[i], 2)
-  }
-  d2 = Math.log(Math.sqrt(d2))
-  this.computedRadius[0] = d2
-}
-
-proto.rotate = function(t, yaw, pitch, roll) {
-  this.recalcMatrix(t)
-  var mat = this.computedInverse
-  if(yaw)   rotateY(mat, mat, yaw)
-  if(pitch) rotateX(mat, mat, pitch)
-  if(roll)  rotateZ(mat, mat, roll)
-  this.setMatrix(t, invert44(this.computedMatrix, mat))
-}
-
-var tvec = [0,0,0]
-
-proto.pan = function(t, dx, dy, dz) {
-  tvec[0] = -(dx || 0.0)
-  tvec[1] = -(dy || 0.0)
-  tvec[2] = -(dz || 0.0)
-  this.recalcMatrix(t)
-  var mat = this.computedInverse
-  translate(mat, mat, tvec)
-  this.setMatrix(t, invert44(mat, mat))
-}
-
-proto.translate = function(t, dx, dy, dz) {
-  tvec[0] = dx || 0.0
-  tvec[1] = dy || 0.0
-  tvec[2] = dz || 0.0
-  this.recalcMatrix(t)
-  var mat = this.computedMatrix
-  translate(mat, mat, tvec)
-  this.setMatrix(t, mat)
-}
-
-proto.setMatrix = function(t, mat) {
-  if(t < this.lastT()) {
-    return
-  }
-  this._time.push(t)
-  for(var i=0; i<16; ++i) {
-    this._components.push(mat[i])
-  }
-}
-
-proto.setDistance = function(t, d) {
-  this.computedRadius[0] = d
-}
-
-proto.setDistanceLimits = function(a,b) {
-  var lim = this._limits
-  lim[0] = a
-  lim[1] = b
-}
-
-proto.getDistanceLimits = function(out) {
-  var lim = this._limits
-  if(out) {
-    out[0] = lim[0]
-    out[1] = lim[1]
-    return out
-  }
-  return lim
-}
-
-function createMatrixCameraController(options) {
-  options = options || {}
-  var matrix = options.matrix || 
-              [1,0,0,0,
-               0,1,0,0,
-               0,0,1,0,
-               0,0,0,1]
-  return new MatrixCameraController(matrix)
-}
-
-
-/***/ }),
-/* 43 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var lerp = __webpack_require__(44)
-
-var recompose = __webpack_require__(45)
-var decompose = __webpack_require__(48)
-var determinant = __webpack_require__(17)
-var slerp = __webpack_require__(53)
-
-var state0 = state()
-var state1 = state()
-var tmp = state()
-
-module.exports = interpolate
-function interpolate(out, start, end, alpha) {
-    if (determinant(start) === 0 || determinant(end) === 0)
-        return false
-
-    //decompose the start and end matrices into individual components
-    var r0 = decompose(start, state0.translate, state0.scale, state0.skew, state0.perspective, state0.quaternion)
-    var r1 = decompose(end, state1.translate, state1.scale, state1.skew, state1.perspective, state1.quaternion)
-    if (!r0 || !r1)
-        return false    
-
-
-    //now lerp/slerp the start and end components into a temporary     lerp(tmptranslate, state0.translate, state1.translate, alpha)
-    lerp(tmp.translate, state0.translate, state1.translate, alpha)
-    lerp(tmp.skew, state0.skew, state1.skew, alpha)
-    lerp(tmp.scale, state0.scale, state1.scale, alpha)
-    lerp(tmp.perspective, state0.perspective, state1.perspective, alpha)
-    slerp(tmp.quaternion, state0.quaternion, state1.quaternion, alpha)
-
-    //and recompose into our 'out' matrix
-    recompose(out, tmp.translate, tmp.scale, tmp.skew, tmp.perspective, tmp.quaternion)
-    return true
-}
-
-function state() {
-    return {
-        translate: vec3(),
-        scale: vec3(1),
-        skew: vec3(),
-        perspective: vec4(),
-        quaternion: vec4()
-    }
-}
-
-function vec3(n) {
-    return [n||0,n||0,n||0]
-}
-
-function vec4() {
-    return [0,0,0,1]
-}
-
-/***/ }),
-/* 44 */
-/***/ (function(module, exports) {
-
-module.exports = lerp;
-
-/**
- * Performs a linear interpolation between two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {vec3} out
- */
-function lerp(out, a, b, t) {
-    var ax = a[0],
-        ay = a[1],
-        az = a[2]
-    out[0] = ax + t * (b[0] - ax)
-    out[1] = ay + t * (b[1] - ay)
-    out[2] = az + t * (b[2] - az)
-    return out
-}
-
-/***/ }),
-/* 45 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-Input:  translation ; a 3 component vector
-        scale       ; a 3 component vector
-        skew        ; skew factors XY,XZ,YZ represented as a 3 component vector
-        perspective ; a 4 component vector
-        quaternion  ; a 4 component vector
-Output: matrix      ; a 4x4 matrix
-
-From: http://www.w3.org/TR/css3-transforms/#recomposing-to-a-3d-matrix
-*/
-
-var mat4 = {
-    identity: __webpack_require__(13),
-    translate: __webpack_require__(14),
-    multiply: __webpack_require__(46),
-    create: __webpack_require__(15),
-    scale: __webpack_require__(16),
-    fromRotationTranslation: __webpack_require__(47)
-}
-
-var rotationMatrix = mat4.create()
-var temp = mat4.create()
-
-module.exports = function recomposeMat4(matrix, translation, scale, skew, perspective, quaternion) {
-    mat4.identity(matrix)
-
-    //apply translation & rotation
-    mat4.fromRotationTranslation(matrix, quaternion, translation)
-
-    //apply perspective
-    matrix[3] = perspective[0]
-    matrix[7] = perspective[1]
-    matrix[11] = perspective[2]
-    matrix[15] = perspective[3]
-        
-    // apply skew
-    // temp is a identity 4x4 matrix initially
-    mat4.identity(temp)
-
-    if (skew[2] !== 0) {
-        temp[9] = skew[2]
-        mat4.multiply(matrix, matrix, temp)
-    }
-
-    if (skew[1] !== 0) {
-        temp[9] = 0
-        temp[8] = skew[1]
-        mat4.multiply(matrix, matrix, temp)
-    }
-
-    if (skew[0] !== 0) {
-        temp[8] = 0
-        temp[4] = skew[0]
-        mat4.multiply(matrix, matrix, temp)
-    }
-
-    //apply scale
-    mat4.scale(matrix, matrix, scale)
-    return matrix
-}
-
-/***/ }),
-/* 46 */
-/***/ (function(module, exports) {
-
-module.exports = multiply;
-
-/**
- * Multiplies two mat4's
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the first operand
- * @param {mat4} b the second operand
- * @returns {mat4} out
- */
-function multiply(out, a, b) {
-    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
-        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
-        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
-        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
-
-    // Cache only the current line of the second matrix
-    var b0  = b[0], b1 = b[1], b2 = b[2], b3 = b[3];  
-    out[0] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    out[1] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    out[2] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    out[3] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    b0 = b[4]; b1 = b[5]; b2 = b[6]; b3 = b[7];
-    out[4] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    out[5] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    out[6] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    out[7] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    b0 = b[8]; b1 = b[9]; b2 = b[10]; b3 = b[11];
-    out[8] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    out[9] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    out[10] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    out[11] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-
-    b0 = b[12]; b1 = b[13]; b2 = b[14]; b3 = b[15];
-    out[12] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
-    out[13] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
-    out[14] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
-    out[15] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
-    return out;
-};
-
-/***/ }),
-/* 47 */
-/***/ (function(module, exports) {
-
-module.exports = fromRotationTranslation;
-
-/**
- * Creates a matrix from a quaternion rotation and vector translation
- * This is equivalent to (but much faster than):
- *
- *     mat4.identity(dest);
- *     mat4.translate(dest, vec);
- *     var quatMat = mat4.create();
- *     quat4.toMat4(quat, quatMat);
- *     mat4.multiply(dest, quatMat);
- *
- * @param {mat4} out mat4 receiving operation result
- * @param {quat4} q Rotation quaternion
- * @param {vec3} v Translation vector
- * @returns {mat4} out
- */
-function fromRotationTranslation(out, q, v) {
-    // Quaternion math
-    var x = q[0], y = q[1], z = q[2], w = q[3],
-        x2 = x + x,
-        y2 = y + y,
-        z2 = z + z,
-
-        xx = x * x2,
-        xy = x * y2,
-        xz = x * z2,
-        yy = y * y2,
-        yz = y * z2,
-        zz = z * z2,
-        wx = w * x2,
-        wy = w * y2,
-        wz = w * z2;
-
-    out[0] = 1 - (yy + zz);
-    out[1] = xy + wz;
-    out[2] = xz - wy;
-    out[3] = 0;
-    out[4] = xy - wz;
-    out[5] = 1 - (xx + zz);
-    out[6] = yz + wx;
-    out[7] = 0;
-    out[8] = xz + wy;
-    out[9] = yz - wx;
-    out[10] = 1 - (xx + yy);
-    out[11] = 0;
-    out[12] = v[0];
-    out[13] = v[1];
-    out[14] = v[2];
-    out[15] = 1;
-    
-    return out;
-};
-
-/***/ }),
-/* 48 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*jshint unused:true*/
-/*
-Input:  matrix      ; a 4x4 matrix
-Output: translation ; a 3 component vector
-        scale       ; a 3 component vector
-        skew        ; skew factors XY,XZ,YZ represented as a 3 component vector
-        perspective ; a 4 component vector
-        quaternion  ; a 4 component vector
-Returns false if the matrix cannot be decomposed, true if it can
-
-
-References:
-https://github.com/kamicane/matrix3d/blob/master/lib/Matrix3d.js
-https://github.com/ChromiumWebApps/chromium/blob/master/ui/gfx/transform_util.cc
-http://www.w3.org/TR/css3-transforms/#decomposing-a-3d-matrix
-*/
-
-var normalize = __webpack_require__(49)
-
-var create = __webpack_require__(15)
-var clone = __webpack_require__(50)
-var determinant = __webpack_require__(17)
-var invert = __webpack_require__(3)
-var transpose = __webpack_require__(51)
-var vec3 = {
-    length: __webpack_require__(52),
-    normalize: __webpack_require__(4),
-    dot: __webpack_require__(11),
-    cross: __webpack_require__(10)
-}
-
-var tmp = create()
-var perspectiveMatrix = create()
-var tmpVec4 = [0, 0, 0, 0]
-var row = [ [0,0,0], [0,0,0], [0,0,0] ]
-var pdum3 = [0,0,0]
-
-module.exports = function decomposeMat4(matrix, translation, scale, skew, perspective, quaternion) {
-    if (!translation) translation = [0,0,0]
-    if (!scale) scale = [0,0,0]
-    if (!skew) skew = [0,0,0]
-    if (!perspective) perspective = [0,0,0,1]
-    if (!quaternion) quaternion = [0,0,0,1]
-
-    //normalize, if not possible then bail out early
-    if (!normalize(tmp, matrix))
-        return false
-
-    // perspectiveMatrix is used to solve for perspective, but it also provides
-    // an easy way to test for singularity of the upper 3x3 component.
-    clone(perspectiveMatrix, tmp)
-
-    perspectiveMatrix[3] = 0
-    perspectiveMatrix[7] = 0
-    perspectiveMatrix[11] = 0
-    perspectiveMatrix[15] = 1
-
-    // If the perspectiveMatrix is not invertible, we are also unable to
-    // decompose, so we'll bail early. Constant taken from SkMatrix44::invert.
-    if (Math.abs(determinant(perspectiveMatrix) < 1e-8))
-        return false
-
-    var a03 = tmp[3], a13 = tmp[7], a23 = tmp[11],
-            a30 = tmp[12], a31 = tmp[13], a32 = tmp[14], a33 = tmp[15]
-
-    // First, isolate perspective.
-    if (a03 !== 0 || a13 !== 0 || a23 !== 0) {
-        tmpVec4[0] = a03
-        tmpVec4[1] = a13
-        tmpVec4[2] = a23
-        tmpVec4[3] = a33
-
-        // Solve the equation by inverting perspectiveMatrix and multiplying
-        // rightHandSide by the inverse.
-        // resuing the perspectiveMatrix here since it's no longer needed
-        var ret = invert(perspectiveMatrix, perspectiveMatrix)
-        if (!ret) return false
-        transpose(perspectiveMatrix, perspectiveMatrix)
-
-        //multiply by transposed inverse perspective matrix, into perspective vec4
-        vec4multMat4(perspective, tmpVec4, perspectiveMatrix)
-    } else { 
-        //no perspective
-        perspective[0] = perspective[1] = perspective[2] = 0
-        perspective[3] = 1
-    }
-
-    // Next take care of translation
-    translation[0] = a30
-    translation[1] = a31
-    translation[2] = a32
-
-    // Now get scale and shear. 'row' is a 3 element array of 3 component vectors
-    mat3from4(row, tmp)
-
-    // Compute X scale factor and normalize first row.
-    scale[0] = vec3.length(row[0])
-    vec3.normalize(row[0], row[0])
-
-    // Compute XY shear factor and make 2nd row orthogonal to 1st.
-    skew[0] = vec3.dot(row[0], row[1])
-    combine(row[1], row[1], row[0], 1.0, -skew[0])
-
-    // Now, compute Y scale and normalize 2nd row.
-    scale[1] = vec3.length(row[1])
-    vec3.normalize(row[1], row[1])
-    skew[0] /= scale[1]
-
-    // Compute XZ and YZ shears, orthogonalize 3rd row
-    skew[1] = vec3.dot(row[0], row[2])
-    combine(row[2], row[2], row[0], 1.0, -skew[1])
-    skew[2] = vec3.dot(row[1], row[2])
-    combine(row[2], row[2], row[1], 1.0, -skew[2])
-
-    // Next, get Z scale and normalize 3rd row.
-    scale[2] = vec3.length(row[2])
-    vec3.normalize(row[2], row[2])
-    skew[1] /= scale[2]
-    skew[2] /= scale[2]
-
-
-    // At this point, the matrix (in rows) is orthonormal.
-    // Check for a coordinate system flip.  If the determinant
-    // is -1, then negate the matrix and the scaling factors.
-    vec3.cross(pdum3, row[1], row[2])
-    if (vec3.dot(row[0], pdum3) < 0) {
-        for (var i = 0; i < 3; i++) {
-            scale[i] *= -1;
-            row[i][0] *= -1
-            row[i][1] *= -1
-            row[i][2] *= -1
-        }
-    }
-
-    // Now, get the rotations out
-    quaternion[0] = 0.5 * Math.sqrt(Math.max(1 + row[0][0] - row[1][1] - row[2][2], 0))
-    quaternion[1] = 0.5 * Math.sqrt(Math.max(1 - row[0][0] + row[1][1] - row[2][2], 0))
-    quaternion[2] = 0.5 * Math.sqrt(Math.max(1 - row[0][0] - row[1][1] + row[2][2], 0))
-    quaternion[3] = 0.5 * Math.sqrt(Math.max(1 + row[0][0] + row[1][1] + row[2][2], 0))
-
-    if (row[2][1] > row[1][2])
-        quaternion[0] = -quaternion[0]
-    if (row[0][2] > row[2][0])
-        quaternion[1] = -quaternion[1]
-    if (row[1][0] > row[0][1])
-        quaternion[2] = -quaternion[2]
-    return true
-}
-
-//will be replaced by gl-vec4 eventually
-function vec4multMat4(out, a, m) {
-    var x = a[0], y = a[1], z = a[2], w = a[3];
-    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
-    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
-    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
-    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
-    return out;
-}
-
-//gets upper-left of a 4x4 matrix into a 3x3 of vectors
-function mat3from4(out, mat4x4) {
-    out[0][0] = mat4x4[0]
-    out[0][1] = mat4x4[1]
-    out[0][2] = mat4x4[2]
-    
-    out[1][0] = mat4x4[4]
-    out[1][1] = mat4x4[5]
-    out[1][2] = mat4x4[6]
-
-    out[2][0] = mat4x4[8]
-    out[2][1] = mat4x4[9]
-    out[2][2] = mat4x4[10]
-}
-
-function combine(out, a, b, scale1, scale2) {
-    out[0] = a[0] * scale1 + b[0] * scale2
-    out[1] = a[1] * scale1 + b[1] * scale2
-    out[2] = a[2] * scale1 + b[2] * scale2
-}
-
-/***/ }),
-/* 49 */
-/***/ (function(module, exports) {
-
-module.exports = function normalize(out, mat) {
-    var m44 = mat[15]
-    // Cannot normalize.
-    if (m44 === 0) 
-        return false
-    var scale = 1 / m44
-    for (var i=0; i<16; i++)
-        out[i] = mat[i] * scale
-    return true
-}
-
-/***/ }),
-/* 50 */
-/***/ (function(module, exports) {
-
-module.exports = clone;
-
-/**
- * Creates a new mat4 initialized with values from an existing matrix
- *
- * @param {mat4} a matrix to clone
- * @returns {mat4} a new 4x4 matrix
- */
-function clone(a) {
-    var out = new Float32Array(16);
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    out[3] = a[3];
-    out[4] = a[4];
-    out[5] = a[5];
-    out[6] = a[6];
-    out[7] = a[7];
-    out[8] = a[8];
-    out[9] = a[9];
-    out[10] = a[10];
-    out[11] = a[11];
-    out[12] = a[12];
-    out[13] = a[13];
-    out[14] = a[14];
-    out[15] = a[15];
-    return out;
-};
-
-/***/ }),
-/* 51 */
-/***/ (function(module, exports) {
-
-module.exports = transpose;
-
-/**
- * Transpose the values of a mat4
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the source matrix
- * @returns {mat4} out
- */
-function transpose(out, a) {
-    // If we are transposing ourselves we can skip a few steps but have to cache some values
-    if (out === a) {
-        var a01 = a[1], a02 = a[2], a03 = a[3],
-            a12 = a[6], a13 = a[7],
-            a23 = a[11];
-
-        out[1] = a[4];
-        out[2] = a[8];
-        out[3] = a[12];
-        out[4] = a01;
-        out[6] = a[9];
-        out[7] = a[13];
-        out[8] = a02;
-        out[9] = a12;
-        out[11] = a[14];
-        out[12] = a03;
-        out[13] = a13;
-        out[14] = a23;
-    } else {
-        out[0] = a[0];
-        out[1] = a[4];
-        out[2] = a[8];
-        out[3] = a[12];
-        out[4] = a[1];
-        out[5] = a[5];
-        out[6] = a[9];
-        out[7] = a[13];
-        out[8] = a[2];
-        out[9] = a[6];
-        out[10] = a[10];
-        out[11] = a[14];
-        out[12] = a[3];
-        out[13] = a[7];
-        out[14] = a[11];
-        out[15] = a[15];
-    }
-    
-    return out;
-};
-
-/***/ }),
-/* 52 */
-/***/ (function(module, exports) {
-
-module.exports = length;
-
-/**
- * Calculates the length of a vec3
- *
- * @param {vec3} a vector to calculate length of
- * @returns {Number} length of a
- */
-function length(a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2]
-    return Math.sqrt(x*x + y*y + z*z)
-}
-
-/***/ }),
-/* 53 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(54)
-
-/***/ }),
-/* 54 */
-/***/ (function(module, exports) {
-
-module.exports = slerp
-
-/**
- * Performs a spherical linear interpolation between two quat
- *
- * @param {quat} out the receiving quaternion
- * @param {quat} a the first operand
- * @param {quat} b the second operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {quat} out
- */
-function slerp (out, a, b, t) {
-  // benchmarks:
-  //    http://jsperf.com/quaternion-slerp-implementations
-
-  var ax = a[0], ay = a[1], az = a[2], aw = a[3],
-    bx = b[0], by = b[1], bz = b[2], bw = b[3]
-
-  var omega, cosom, sinom, scale0, scale1
-
-  // calc cosine
-  cosom = ax * bx + ay * by + az * bz + aw * bw
-  // adjust signs (if necessary)
-  if (cosom < 0.0) {
-    cosom = -cosom
-    bx = -bx
-    by = -by
-    bz = -bz
-    bw = -bw
-  }
-  // calculate coefficients
-  if ((1.0 - cosom) > 0.000001) {
-    // standard case (slerp)
-    omega = Math.acos(cosom)
-    sinom = Math.sin(omega)
-    scale0 = Math.sin((1.0 - t) * omega) / sinom
-    scale1 = Math.sin(t * omega) / sinom
-  } else {
-    // "from" and "to" quaternions are very close
-    //  ... so we can do a linear interpolation
-    scale0 = 1.0 - t
-    scale1 = t
-  }
-  // calculate final values
-  out[0] = scale0 * ax + scale1 * bx
-  out[1] = scale0 * ay + scale1 * by
-  out[2] = scale0 * az + scale1 * bz
-  out[3] = scale0 * aw + scale1 * bw
-
-  return out
-}
-
-
-/***/ }),
-/* 55 */
-/***/ (function(module, exports) {
-
-module.exports = rotateX;
-
-/**
- * Rotates a matrix by the given angle around the X axis
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat4} out
- */
-function rotateX(out, a, rad) {
-    var s = Math.sin(rad),
-        c = Math.cos(rad),
-        a10 = a[4],
-        a11 = a[5],
-        a12 = a[6],
-        a13 = a[7],
-        a20 = a[8],
-        a21 = a[9],
-        a22 = a[10],
-        a23 = a[11];
-
-    if (a !== out) { // If the source and destination differ, copy the unchanged rows
-        out[0]  = a[0];
-        out[1]  = a[1];
-        out[2]  = a[2];
-        out[3]  = a[3];
-        out[12] = a[12];
-        out[13] = a[13];
-        out[14] = a[14];
-        out[15] = a[15];
-    }
-
-    // Perform axis-specific matrix multiplication
-    out[4] = a10 * c + a20 * s;
-    out[5] = a11 * c + a21 * s;
-    out[6] = a12 * c + a22 * s;
-    out[7] = a13 * c + a23 * s;
-    out[8] = a20 * c - a10 * s;
-    out[9] = a21 * c - a11 * s;
-    out[10] = a22 * c - a12 * s;
-    out[11] = a23 * c - a13 * s;
-    return out;
-};
-
-/***/ }),
-/* 56 */
-/***/ (function(module, exports) {
-
-module.exports = rotateY;
-
-/**
- * Rotates a matrix by the given angle around the Y axis
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat4} out
- */
-function rotateY(out, a, rad) {
-    var s = Math.sin(rad),
-        c = Math.cos(rad),
-        a00 = a[0],
-        a01 = a[1],
-        a02 = a[2],
-        a03 = a[3],
-        a20 = a[8],
-        a21 = a[9],
-        a22 = a[10],
-        a23 = a[11];
-
-    if (a !== out) { // If the source and destination differ, copy the unchanged rows
-        out[4]  = a[4];
-        out[5]  = a[5];
-        out[6]  = a[6];
-        out[7]  = a[7];
-        out[12] = a[12];
-        out[13] = a[13];
-        out[14] = a[14];
-        out[15] = a[15];
-    }
-
-    // Perform axis-specific matrix multiplication
-    out[0] = a00 * c - a20 * s;
-    out[1] = a01 * c - a21 * s;
-    out[2] = a02 * c - a22 * s;
-    out[3] = a03 * c - a23 * s;
-    out[8] = a00 * s + a20 * c;
-    out[9] = a01 * s + a21 * c;
-    out[10] = a02 * s + a22 * c;
-    out[11] = a03 * s + a23 * c;
-    return out;
-};
-
-/***/ }),
-/* 57 */
-/***/ (function(module, exports) {
-
-module.exports = rotateZ;
-
-/**
- * Rotates a matrix by the given angle around the Z axis
- *
- * @param {mat4} out the receiving matrix
- * @param {mat4} a the matrix to rotate
- * @param {Number} rad the angle to rotate the matrix by
- * @returns {mat4} out
- */
-function rotateZ(out, a, rad) {
-    var s = Math.sin(rad),
-        c = Math.cos(rad),
-        a00 = a[0],
-        a01 = a[1],
-        a02 = a[2],
-        a03 = a[3],
-        a10 = a[4],
-        a11 = a[5],
-        a12 = a[6],
-        a13 = a[7];
-
-    if (a !== out) { // If the source and destination differ, copy the unchanged last row
-        out[8]  = a[8];
-        out[9]  = a[9];
-        out[10] = a[10];
-        out[11] = a[11];
-        out[12] = a[12];
-        out[13] = a[13];
-        out[14] = a[14];
-        out[15] = a[15];
-    }
-
-    // Perform axis-specific matrix multiplication
-    out[0] = a00 * c + a10 * s;
-    out[1] = a01 * c + a11 * s;
-    out[2] = a02 * c + a12 * s;
-    out[3] = a03 * c + a13 * s;
-    out[4] = a10 * c - a00 * s;
-    out[5] = a11 * c - a01 * s;
-    out[6] = a12 * c - a02 * s;
-    out[7] = a13 * c - a03 * s;
-    return out;
-};
-
-/***/ }),
-/* 58 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = mouseListen
-
-var mouse = __webpack_require__(59)
-
-function mouseListen (element, callback) {
-  if (!callback) {
-    callback = element
-    element = window
-  }
-
-  var buttonState = 0
-  var x = 0
-  var y = 0
-  var mods = {
-    shift: false,
-    alt: false,
-    control: false,
-    meta: false
-  }
-  var attached = false
-
-  function updateMods (ev) {
-    var changed = false
-    if ('altKey' in ev) {
-      changed = changed || ev.altKey !== mods.alt
-      mods.alt = !!ev.altKey
-    }
-    if ('shiftKey' in ev) {
-      changed = changed || ev.shiftKey !== mods.shift
-      mods.shift = !!ev.shiftKey
-    }
-    if ('ctrlKey' in ev) {
-      changed = changed || ev.ctrlKey !== mods.control
-      mods.control = !!ev.ctrlKey
-    }
-    if ('metaKey' in ev) {
-      changed = changed || ev.metaKey !== mods.meta
-      mods.meta = !!ev.metaKey
-    }
-    return changed
-  }
-
-  function handleEvent (nextButtons, ev) {
-    var nextX = mouse.x(ev)
-    var nextY = mouse.y(ev)
-    if ('buttons' in ev) {
-      nextButtons = ev.buttons | 0
-    }
-    if (nextButtons !== buttonState ||
-      nextX !== x ||
-      nextY !== y ||
-      updateMods(ev)) {
-      buttonState = nextButtons | 0
-      x = nextX || 0
-      y = nextY || 0
-      callback && callback(buttonState, x, y, mods)
-    }
-  }
-
-  function clearState (ev) {
-    handleEvent(0, ev)
-  }
-
-  function handleBlur () {
-    if (buttonState ||
-      x ||
-      y ||
-      mods.shift ||
-      mods.alt ||
-      mods.meta ||
-      mods.control) {
-      x = y = 0
-      buttonState = 0
-      mods.shift = mods.alt = mods.control = mods.meta = false
-      callback && callback(0, 0, 0, mods)
-    }
-  }
-
-  function handleMods (ev) {
-    if (updateMods(ev)) {
-      callback && callback(buttonState, x, y, mods)
-    }
-  }
-
-  function handleMouseMove (ev) {
-    if (mouse.buttons(ev) === 0) {
-      handleEvent(0, ev)
-    } else {
-      handleEvent(buttonState, ev)
-    }
-  }
-
-  function handleMouseDown (ev) {
-    handleEvent(buttonState | mouse.buttons(ev), ev)
-  }
-
-  function handleMouseUp (ev) {
-    handleEvent(buttonState & ~mouse.buttons(ev), ev)
-  }
-
-  function attachListeners () {
-    if (attached) {
-      return
-    }
-    attached = true
-
-    element.addEventListener('mousemove', handleMouseMove)
-
-    element.addEventListener('mousedown', handleMouseDown)
-
-    element.addEventListener('mouseup', handleMouseUp)
-
-    element.addEventListener('mouseleave', clearState)
-    element.addEventListener('mouseenter', clearState)
-    element.addEventListener('mouseout', clearState)
-    element.addEventListener('mouseover', clearState)
-
-    element.addEventListener('blur', handleBlur)
-
-    element.addEventListener('keyup', handleMods)
-    element.addEventListener('keydown', handleMods)
-    element.addEventListener('keypress', handleMods)
-
-    if (element !== window) {
-      window.addEventListener('blur', handleBlur)
-
-      window.addEventListener('keyup', handleMods)
-      window.addEventListener('keydown', handleMods)
-      window.addEventListener('keypress', handleMods)
-    }
-  }
-
-  function detachListeners () {
-    if (!attached) {
-      return
-    }
-    attached = false
-
-    element.removeEventListener('mousemove', handleMouseMove)
-
-    element.removeEventListener('mousedown', handleMouseDown)
-
-    element.removeEventListener('mouseup', handleMouseUp)
-
-    element.removeEventListener('mouseleave', clearState)
-    element.removeEventListener('mouseenter', clearState)
-    element.removeEventListener('mouseout', clearState)
-    element.removeEventListener('mouseover', clearState)
-
-    element.removeEventListener('blur', handleBlur)
-
-    element.removeEventListener('keyup', handleMods)
-    element.removeEventListener('keydown', handleMods)
-    element.removeEventListener('keypress', handleMods)
-
-    if (element !== window) {
-      window.removeEventListener('blur', handleBlur)
-
-      window.removeEventListener('keyup', handleMods)
-      window.removeEventListener('keydown', handleMods)
-      window.removeEventListener('keypress', handleMods)
-    }
-  }
-
-  // Attach listeners
-  attachListeners()
-
-  var result = {
-    element: element
-  }
-
-  Object.defineProperties(result, {
-    enabled: {
-      get: function () { return attached },
-      set: function (f) {
-        if (f) {
-          attachListeners()
-        } else {
-          detachListeners()
-        }
-      },
-      enumerable: true
-    },
-    buttons: {
-      get: function () { return buttonState },
-      enumerable: true
-    },
-    x: {
-      get: function () { return x },
-      enumerable: true
-    },
-    y: {
-      get: function () { return y },
-      enumerable: true
-    },
-    mods: {
-      get: function () { return mods },
-      enumerable: true
-    }
-  })
-
-  return result
-}
-
-
-/***/ }),
-/* 59 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function mouseButtons(ev) {
-  if(typeof ev === 'object') {
-    if('buttons' in ev) {
-      return ev.buttons
-    } else if('which' in ev) {
-      var b = ev.which
-      if(b === 2) {
-        return 4
-      } else if(b === 3) {
-        return 2
-      } else if(b > 0) {
-        return 1<<(b-1)
-      }
-    } else if('button' in ev) {
-      var b = ev.button
-      if(b === 1) {
-        return 4
-      } else if(b === 2) {
-        return 2
-      } else if(b >= 0) {
-        return 1<<b
-      }
-    }
-  }
-  return 0
-}
-exports.buttons = mouseButtons
-
-function mouseElement(ev) {
-  return ev.target || ev.srcElement || window
-}
-exports.element = mouseElement
-
-function mouseRelativeX(ev) {
-  if(typeof ev === 'object') {
-    if('offsetX' in ev) {
-      return ev.offsetX
-    }
-    var target = mouseElement(ev)
-    var bounds = target.getBoundingClientRect()
-    return ev.clientX - bounds.left
-  }
-  return 0
-}
-exports.x = mouseRelativeX
-
-function mouseRelativeY(ev) {
-  if(typeof ev === 'object') {
-    if('offsetY' in ev) {
-      return ev.offsetY
-    }
-    var target = mouseElement(ev)
-    var bounds = target.getBoundingClientRect()
-    return ev.clientY - bounds.top
-  }
-  return 0
-}
-exports.y = mouseRelativeY
-
-
-/***/ }),
-/* 60 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var toPX = __webpack_require__(61)
-
-module.exports = mouseWheelListen
-
-function mouseWheelListen(element, callback, noScroll) {
-  if(typeof element === 'function') {
-    noScroll = !!callback
-    callback = element
-    element = window
-  }
-  var lineHeight = toPX('ex', element)
-  var listener = function(ev) {
-    if(noScroll) {
-      ev.preventDefault()
-    }
-    var dx = ev.deltaX || 0
-    var dy = ev.deltaY || 0
-    var dz = ev.deltaZ || 0
-    var mode = ev.deltaMode
-    var scale = 1
-    switch(mode) {
-      case 1:
-        scale = lineHeight
-      break
-      case 2:
-        scale = window.innerHeight
-      break
-    }
-    dx *= scale
-    dy *= scale
-    dz *= scale
-    if(dx || dy || dz) {
-      return callback(dx, dy, dz, ev)
-    }
-  }
-  element.addEventListener('wheel', listener)
-  return listener
-}
-
-
-/***/ }),
-/* 61 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var parseUnit = __webpack_require__(62)
-
-module.exports = toPX
-
-var PIXELS_PER_INCH = 96
-
-function getPropertyInPX(element, prop) {
-  var parts = parseUnit(getComputedStyle(element).getPropertyValue(prop))
-  return parts[0] * toPX(parts[1], element)
-}
-
-//This brutal hack is needed
-function getSizeBrutal(unit, element) {
-  var testDIV = document.createElement('div')
-  testDIV.style['font-size'] = '128' + unit
-  element.appendChild(testDIV)
-  var size = getPropertyInPX(testDIV, 'font-size') / 128
-  element.removeChild(testDIV)
-  return size
-}
-
-function toPX(str, element) {
-  element = element || document.body
-  str = (str || 'px').trim().toLowerCase()
-  if(element === window || element === document) {
-    element = document.body 
-  }
-  switch(str) {
-    case '%':  //Ambiguous, not sure if we should use width or height
-      return element.clientHeight / 100.0
-    case 'ch':
-    case 'ex':
-      return getSizeBrutal(str, element)
-    case 'em':
-      return getPropertyInPX(element, 'font-size')
-    case 'rem':
-      return getPropertyInPX(document.body, 'font-size')
-    case 'vw':
-      return window.innerWidth/100
-    case 'vh':
-      return window.innerHeight/100
-    case 'vmin':
-      return Math.min(window.innerWidth, window.innerHeight) / 100
-    case 'vmax':
-      return Math.max(window.innerWidth, window.innerHeight) / 100
-    case 'in':
-      return PIXELS_PER_INCH
-    case 'cm':
-      return PIXELS_PER_INCH / 2.54
-    case 'mm':
-      return PIXELS_PER_INCH / 25.4
-    case 'pt':
-      return PIXELS_PER_INCH / 72
-    case 'pc':
-      return PIXELS_PER_INCH / 6
-  }
-  return 1
-}
-
-/***/ }),
-/* 62 */
-/***/ (function(module, exports) {
-
-module.exports = function parseUnit(str, out) {
-    if (!out)
-        out = [ 0, '' ]
-
-    str = String(str)
-    var num = parseFloat(str, 10)
-    out[0] = num
-    out[1] = str.match(/[\d.\-\+]*\s*(.*)/)[1] || ''
-    return out
-}
-
-/***/ }),
-/* 63 */
-/***/ (function(module, exports) {
-
-var rootPosition = { left: 0, top: 0 }
-
-module.exports = mouseEventOffset
-function mouseEventOffset (ev, target, out) {
-  target = target || ev.currentTarget || ev.srcElement
-  if (!Array.isArray(out)) {
-    out = [ 0, 0 ]
-  }
-  var cx = ev.clientX || 0
-  var cy = ev.clientY || 0
-  var rect = getBoundingClientOffset(target)
-  out[0] = cx - rect.left
-  out[1] = cy - rect.top
-  return out
-}
-
-function getBoundingClientOffset (element) {
-  if (element === window ||
-      element === document ||
-      element === document.body) {
-    return rootPosition
-  } else {
-    return element.getBoundingClientRect()
-  }
-}
-
-
-/***/ }),
-/* 64 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var isBrowser = __webpack_require__(65)
-
-function detect() {
-	var supported = false
-
-	try {
-		var opts = Object.defineProperty({}, 'passive', {
-			get: function() {
-				supported = true
-			}
-		})
-
-		window.addEventListener('test', null, opts)
-		window.removeEventListener('test', null, opts)
-	} catch(e) {
-		supported = false
-	}
-
-	return supported
-}
-
-module.exports = isBrowser && detect()
-
-
-/***/ }),
-/* 65 */
-/***/ (function(module, exports) {
-
-module.exports = true;
-
-/***/ }),
-/* 66 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__globals__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_gl_matrix__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__globals__ = __webpack_require__(3);
 
 
 var activeProgram = null;
+const ANGLE2RADIUS = 3.1415926 / 180.0;
 class Shader {
     constructor(type, source) {
         this.shader = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].createShader(type);
@@ -15192,23 +16780,39 @@ class Shader {
 
 ;
 class ShaderProgram {
-    constructor(shaders) {
+    constructor(shaders, isTransformFeedback = false, varyings = []) {
         this.prog = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].createProgram();
         for (let shader of shaders) {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].attachShader(this.prog, shader.shader);
+        }
+        // setup transformFeedback stuff
+        if (isTransformFeedback) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].transformFeedbackVaryings(this.prog, varyings, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].SEPARATE_ATTRIBS);
         }
         __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].linkProgram(this.prog);
         if (!__WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getProgramParameter(this.prog, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].LINK_STATUS)) {
             throw __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getProgramInfoLog(this.prog);
         }
         this.attrPos = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Pos");
+        this.attrNor = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Nor");
         this.attrCol = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Col");
-        this.attrTranslate = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getAttribLocation(this.prog, "vs_Translate");
         this.unifModel = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Model");
         this.unifModelInvTr = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ModelInvTr");
         this.unifViewProj = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ViewProj");
+        this.unifColor = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Color");
+        this.unifTimer = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Time");
         this.unifCameraAxes = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_CameraAxes");
-        this.unifTime = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_Time");
+        this.unifParticleRadius = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_ParticleRadius");
+        this.unifIsAttractToPoint = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_IsAttract");
+        this.unifAttractPos = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_AttractPos");
+        this.unifMeshAttractPointsCount = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_MeshAtrractPointCount");
+        this.unifParticleCol1 = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_inputColor1");
+        this.unifParticleCol2 = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_inputColor2");
+        this.unifParticleColChangeFreq = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_colChangeFreq");
+        this.unifParticleAttractMeshSelect = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_MeshSelect");
+        this.unifParticleDrawBreathRate = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, "u_BreathRate");
+        // Get uniform locations for the draw program
+        this.unifDrawAcceleratonLocation = __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].getUniformLocation(this.prog, 'u_Acceleration');
     }
     use() {
         if (activeProgram !== this.prog) {
@@ -15240,37 +16844,119 @@ class ShaderProgram {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniformMatrix3fv(this.unifCameraAxes, false, axes);
         }
     }
-    setTime(t) {
+    setGeometryColor(color) {
         this.use();
-        if (this.unifTime !== -1) {
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifTime, t);
+        if (this.unifColor !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform4fv(this.unifColor, color);
         }
     }
-    draw(d) {
+    setTimer(time) {
+        this.use();
+        if (this.unifTimer !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifTimer, time);
+        }
+    }
+    setTransformAcceleraton(accel) {
+        this.use();
+        if (this.unifDrawAcceleratonLocation !== -1) {
+            let scale = 5.0;
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform3f(this.unifDrawAcceleratonLocation, scale * accel[0], scale * accel[1], scale * accel[2]);
+        }
+    }
+    setParticleSize(particleRadius) {
+        this.use();
+        if (this.unifParticleRadius !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifParticleRadius, particleRadius);
+        }
+    }
+    setIsAttractToPoint(isAttract) {
+        this.use();
+        if (this.unifIsAttractToPoint !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1i(this.unifIsAttractToPoint, isAttract);
+        }
+    }
+    setAttractPos(ndcPos, cam) {
+        this.use();
+        if (this.unifAttractPos !== -1) {
+            let len_vec = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].subtract(len_vec, cam.target, cam.position);
+            let len = 1.35 * __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].length(len_vec);
+            let tanFovByTwo = Math.tan(0.5 * cam.fovy * ANGLE2RADIUS);
+            let v = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(cam.up[0] * len * tanFovByTwo, cam.up[1] * len * tanFovByTwo, cam.up[2] * len * tanFovByTwo);
+            let h = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(cam.right[0] * len * cam.aspectRatio * tanFovByTwo, cam.right[1] * len * cam.aspectRatio * tanFovByTwo, cam.right[2] * len * cam.aspectRatio * tanFovByTwo);
+            let world_pos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(cam.target[0] + ndcPos[0] * h[0] + ndcPos[1] * v[0], cam.target[1] + ndcPos[0] * h[1] + ndcPos[1] * v[1], cam.target[2] + ndcPos[0] * h[2] + ndcPos[1] * v[2]);
+            // let viewProj = mat4.create();
+            // mat4.multiply(viewProj, cam.projectionMatrix, cam.viewMatrix);
+            // let Inv_viewProj = mat4.create();
+            // mat4.invert(Inv_viewProj, viewProj);
+            // let ndcPos_vec4 = vec4.fromValues(ndcPos[0], ndcPos[1], 0.5, 1.0);
+            // let world_pos_vec4 = vec4.create();
+            // vec4.transformMat4(world_pos_vec4, ndcPos_vec4, Inv_viewProj);
+            // let ray_dir = vec3.fromValues(world_pos_vec4[0]-cam.position[0], 
+            //                               world_pos_vec4[1]-cam.position[1], 
+            //                               world_pos_vec4[2]-cam.position[2]);
+            // vec3.normalize(ray_dir, ray_dir);
+            // let world_pos = vec3.create();
+            // world_pos[0] = cam.position[0] + len * ray_dir[0];
+            // world_pos[1] = cam.position[1] + len * ray_dir[1];
+            // world_pos[2] = cam.position[2] + len * ray_dir[2];
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform3fv(this.unifAttractPos, world_pos);
+        }
+    }
+    setMeshAttractCount(count) {
+        this.use();
+        if (this.unifMeshAttractPointsCount !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifMeshAttractPointsCount, count);
+        }
+    }
+    setMeshAttractSelect(idx) {
+        this.use();
+        if (this.unifParticleAttractMeshSelect !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1i(this.unifParticleAttractMeshSelect, idx);
+        }
+    }
+    setParticleColor(color1, color2) {
+        this.use();
+        if (this.unifParticleCol1 !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform3fv(this.unifParticleCol1, color1);
+        }
+        if (this.unifParticleCol2 !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform3fv(this.unifParticleCol2, color2);
+        }
+    }
+    setParticleColorChangeFreq(freq) {
+        this.use();
+        if (this.unifParticleColChangeFreq !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifParticleColChangeFreq, freq);
+        }
+    }
+    setParticleDrawBreathRate(rate) {
+        this.use();
+        if (this.unifParticleDrawBreathRate !== -1) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].uniform1f(this.unifParticleDrawBreathRate, rate);
+        }
+    }
+    draw(d, isInstanced = false, numInstances = 0) {
         this.use();
         if (this.attrPos != -1 && d.bindPos()) {
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enableVertexAttribArray(this.attrPos);
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribPointer(this.attrPos, 4, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].FLOAT, false, 0, 0);
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(this.attrPos, 0); // Advance 1 index in pos VBO for each vertex
         }
-        if (this.attrCol != -1 && d.bindCol()) {
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enableVertexAttribArray(this.attrCol);
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribPointer(this.attrCol, 4, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].FLOAT, false, 0, 0); // May need to adjust stride
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(this.attrCol, 1); // Advance 1 index in col VBO for each drawn instance
-        }
-        if (this.attrTranslate != -1 && d.bindTranslate()) {
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enableVertexAttribArray(this.attrTranslate);
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribPointer(this.attrTranslate, 3, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].FLOAT, false, 0, 0); // May need to adjust stride
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribDivisor(this.attrTranslate, 1); // Advance 1 index in translate VBO for each drawn instance
+        if (this.attrNor != -1 && d.bindNor()) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].enableVertexAttribArray(this.attrNor);
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].vertexAttribPointer(this.attrNor, 4, __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].FLOAT, false, 0, 0);
         }
         d.bindIdx();
-        __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].drawElementsInstanced(d.drawMode(), d.elemCount(), __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].UNSIGNED_INT, 0, d.numInstances);
+        if (isInstanced) {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].drawElementsInstanced(d.drawMode(), d.elemCount(), __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].UNSIGNED_INT, 0, numInstances);
+        }
+        else {
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].drawElements(d.drawMode(), d.elemCount(), __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].UNSIGNED_INT, 0);
+        }
         if (this.attrPos != -1)
             __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].disableVertexAttribArray(this.attrPos);
-        if (this.attrCol != -1)
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].disableVertexAttribArray(this.attrCol);
-        if (this.attrTranslate != -1)
-            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].disableVertexAttribArray(this.attrTranslate);
+        if (this.attrNor != -1)
+            __WEBPACK_IMPORTED_MODULE_1__globals__["a" /* gl */].disableVertexAttribArray(this.attrNor);
     }
 }
 ;
@@ -15278,16 +16964,1819 @@ class ShaderProgram {
 
 
 /***/ }),
+/* 40 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__globals__ = __webpack_require__(3);
+
+// These consts should be consistent with those in OpenGLRneder.ts & particle-vert.glsl
+const POSITION_LOCATION = 2;
+const VELOCITY_LOCATION = 3;
+const COLOR_LOCATION = 4;
+const TIME_LOCATION = 5;
+const ID_LOCATION = 6;
+const MESH_ATTRACT_LOCATION1 = 7;
+const MESH_ATTRACT_LOCATION2 = 8;
+const NUM_LOCATIONS = 7;
+class Particle {
+    constructor(_numParticles) {
+        this.numParticles = _numParticles;
+        // Construct particle data
+        this.particlePositions = new Float32Array(this.numParticles * 3);
+        this.particleVelocities = new Float32Array(this.numParticles * 3);
+        this.particleColors = new Float32Array(this.numParticles * 3);
+        this.particleTime = new Float32Array(this.numParticles * 2);
+        this.particleIDs = new Float32Array(this.numParticles);
+        this.particleMeshAttractPositions1 = new Float32Array(this.numParticles * 3); // at most, every paticle has a attract point
+        this.particleMeshAttractPositions2 = new Float32Array(this.numParticles * 3); // at most, every paticle has a attract point
+        // Init Vertex Arrays and Buffers
+        this.particleVAOs = [__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createVertexArray(), __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createVertexArray()];
+        // Transform feedback objects track output buffer state
+        this.particleTransformFeedbacks = [__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createTransformFeedback(), __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createTransformFeedback()];
+    }
+    create() {
+        // Initialize particle values
+        for (let p = 0; p < this.numParticles; ++p) {
+            this.particlePositions[p * 3] = 0.0;
+            this.particlePositions[p * 3 + 1] = 0.8;
+            this.particlePositions[p * 3 + 2] = 0.0;
+            this.particleVelocities[p * 3] = 0.0;
+            this.particleVelocities[p * 3 + 1] = 0.0;
+            this.particleVelocities[p * 3 + 2] = 0.0;
+            this.particleColors[p * 3] = 0.0;
+            this.particleColors[p * 3 + 1] = 0.0;
+            this.particleColors[p * 3 + 2] = 0.0;
+            this.particleTime[p * 2] = 0.0;
+            this.particleTime[p * 2 + 1] = 0.0;
+            this.particleIDs[p] = p;
+            this.particleMeshAttractPositions1[p * 3] = 0.0;
+            this.particleMeshAttractPositions1[p * 3 + 1] = 0.0;
+            this.particleMeshAttractPositions1[p * 3 + 2] = 0.0;
+            this.particleMeshAttractPositions2[p * 3] = 0.0;
+            this.particleMeshAttractPositions2[p * 3 + 1] = 0.0;
+            this.particleMeshAttractPositions2[p * 3 + 2] = 0.0;
+        }
+        this.particleVBOs = new Array(this.particleVAOs.length);
+        for (let i = 0; i < this.particleVAOs.length; ++i) {
+            this.particleVBOs[i] = new Array(NUM_LOCATIONS);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindVertexArray(this.particleVAOs[i]);
+            this.particleVBOs[i][POSITION_LOCATION] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][POSITION_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particlePositions, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STREAM_COPY);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(POSITION_LOCATION, 3, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(POSITION_LOCATION);
+            this.particleVBOs[i][VELOCITY_LOCATION] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][VELOCITY_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVelocities, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STREAM_COPY);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(VELOCITY_LOCATION, 3, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(VELOCITY_LOCATION);
+            this.particleVBOs[i][COLOR_LOCATION] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][COLOR_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVelocities, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STREAM_COPY);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(COLOR_LOCATION, 3, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(COLOR_LOCATION);
+            this.particleVBOs[i][TIME_LOCATION] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][TIME_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleTime, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STREAM_COPY);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(TIME_LOCATION, 2, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(TIME_LOCATION);
+            this.particleVBOs[i][ID_LOCATION] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][ID_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleIDs, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STATIC_READ);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(ID_LOCATION, 1, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(ID_LOCATION);
+            // // static Mesh portion
+            // this.particleVBOs[i][MESH_ATTRACT_LOCATION1] = gl.createBuffer();
+            // gl.bindBuffer(gl.ARRAY_BUFFER, this.particleVBOs[i][MESH_ATTRACT_LOCATION1]);
+            // gl.bufferData(gl.ARRAY_BUFFER, this.particleMeshAttractPositions1, gl.STATIC_READ);
+            // gl.vertexAttribPointer(MESH_ATTRACT_LOCATION1, 3, gl.FLOAT, false, 0, 0);
+            // gl.enableVertexAttribArray(MESH_ATTRACT_LOCATION1);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].disableVertexAttribArray(MESH_ATTRACT_LOCATION1);
+            // this.particleVBOs[i][MESH_ATTRACT_LOCATION2] = gl.createBuffer();
+            // gl.bindBuffer(gl.ARRAY_BUFFER, this.particleVBOs[i][MESH_ATTRACT_LOCATION2]);
+            // gl.bufferData(gl.ARRAY_BUFFER, this.particleMeshAttractPositions2, gl.STATIC_READ);
+            // gl.vertexAttribPointer(MESH_ATTRACT_LOCATION2, 3, gl.FLOAT, false, 0, 0);
+            // gl.enableVertexAttribArray(MESH_ATTRACT_LOCATION2);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].disableVertexAttribArray(MESH_ATTRACT_LOCATION2);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, null);
+            // Set up output
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindTransformFeedback(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRANSFORM_FEEDBACK, this.particleTransformFeedbacks[i]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 0, this.particleVBOs[i][POSITION_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 1, this.particleVBOs[i][VELOCITY_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 2, this.particleVBOs[i][COLOR_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBufferBase(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRANSFORM_FEEDBACK_BUFFER, 3, this.particleVBOs[i][TIME_LOCATION]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindTransformFeedback(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].TRANSFORM_FEEDBACK, null);
+        }
+    }
+    setMeshAttactPoints(obj1, obj2) {
+        let totalAttractPointsNum = Math.min(obj1.vertices.length, this.numParticles);
+        for (let i = 0; i < totalAttractPointsNum; i++) {
+            this.particleMeshAttractPositions1[i * 3] = obj1.vertices[i][0];
+            this.particleMeshAttractPositions1[i * 3 + 1] = obj1.vertices[i][1];
+            this.particleMeshAttractPositions1[i * 3 + 2] = obj1.vertices[i][2];
+        }
+        totalAttractPointsNum = Math.min(obj2.vertices.length, this.numParticles);
+        for (let i = 0; i < totalAttractPointsNum; i++) {
+            this.particleMeshAttractPositions2[i * 3] = obj2.vertices[i][0];
+            this.particleMeshAttractPositions2[i * 3 + 1] = obj2.vertices[i][1];
+            this.particleMeshAttractPositions2[i * 3 + 2] = obj2.vertices[i][2];
+        }
+        for (let i = 0; i < this.particleVAOs.length; ++i) {
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindVertexArray(this.particleVAOs[i]);
+            // static Mesh portion
+            this.particleVBOs[i][MESH_ATTRACT_LOCATION1] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][MESH_ATTRACT_LOCATION1]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleMeshAttractPositions1, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STATIC_READ);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(MESH_ATTRACT_LOCATION1, 3, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(MESH_ATTRACT_LOCATION1);
+            this.particleVBOs[i][MESH_ATTRACT_LOCATION2] = __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].createBuffer();
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleVBOs[i][MESH_ATTRACT_LOCATION2]);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bufferData(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, this.particleMeshAttractPositions2, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].STATIC_READ);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].vertexAttribPointer(MESH_ATTRACT_LOCATION2, 3, __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].FLOAT, false, 0, 0);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].enableVertexAttribArray(MESH_ATTRACT_LOCATION2);
+            __WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].bindBuffer(__WEBPACK_IMPORTED_MODULE_0__globals__["a" /* gl */].ARRAY_BUFFER, null);
+        }
+        console.log('set mesh attract points finished!');
+    }
+    getVAO(idx) {
+        return this.particleVAOs[idx];
+    }
+    getTransformFeedbacks(idx) {
+        return this.particleTransformFeedbacks[idx];
+    }
+    getVBO(idx) {
+        return this.particleVBOs[idx];
+    }
+}
+/* harmony default export */ __webpack_exports__["a"] = (Particle);
+
+
+/***/ }),
+/* 41 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_obj_mtl_loader__ = __webpack_require__(42);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_obj_mtl_loader___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_obj_mtl_loader__);
+
+let tmp_vertices;
+let tmp_normals;
+let tmp_faces_indices;
+let tmp_faces_normals;
+class Object {
+    constructor(_name) {
+        this.vertices = [];
+        this.faces_indices = [];
+        this.faces_normals = [];
+        this.normals = [];
+        this.name = _name;
+    }
+    create(filePath, callback) {
+        var objMtlLoader = new __WEBPACK_IMPORTED_MODULE_0_obj_mtl_loader__();
+        tmp_vertices = this.vertices;
+        tmp_normals = this.normals;
+        tmp_faces_indices = this.faces_indices;
+        tmp_faces_normals = this.faces_normals;
+        objMtlLoader.load(filePath, function (err, result) {
+            if (err) {
+                console.log("Obj Loader Error");
+            }
+            // push positions
+            for (let i = 0; i < result.vertices.length; i++) {
+                let tmp = [];
+                tmp.push(result.vertices[i][0]);
+                tmp.push(result.vertices[i][1]);
+                tmp.push(result.vertices[i][2]);
+                tmp_vertices.push(tmp);
+            }
+            // push normals
+            for (let i = 0; i < result.normals.length; i++) {
+                let tmp = [];
+                tmp.push(result.normals[i][0]);
+                tmp.push(result.normals[i][1]);
+                tmp.push(result.normals[i][2]);
+                tmp_normals.push(tmp);
+            }
+            // push face indices
+            for (let i = 0; i < result.faces.length; i++) {
+                let tmp1 = [];
+                tmp1.push(result.faces[i].indices[0]);
+                tmp1.push(result.faces[i].indices[1]);
+                tmp1.push(result.faces[i].indices[2]);
+                tmp_faces_indices.push(tmp1);
+                let tmp2 = [];
+                tmp2.push(result.faces[i].normal[0]);
+                tmp2.push(result.faces[i].normal[1]);
+                tmp2.push(result.faces[i].normal[2]);
+                tmp_faces_normals.push(tmp2);
+            }
+            // run call back after finishing loading
+            if (callback != null) {
+                callback();
+            }
+        });
+    }
+}
+;
+/* harmony default export */ __webpack_exports__["a"] = (Object);
+
+
+/***/ }),
+/* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var stream = __webpack_require__(17);
+var split = __webpack_require__(56);
+var xhr = __webpack_require__(58);
+
+
+function ObjLoader() {
+
+  this.vertices = [];
+  this.normals = [];
+  this.textureCoords = [];
+  this.faces = [];
+  this.facesMaterialsIndex = [{materialName: null, materialStartIndex: 0}];
+  this.materials = [];
+
+}
+
+ObjLoader.prototype.load = function(objFilePath, mtlFilePath, callback) {
+
+  var self = this;
+
+  if(typeof mtlFilePath === "function") {
+    callback = mtlFilePath;
+    mtlFilePath = "";
+  }
+
+  xhr(objFilePath, function (err, resp, objFileString) {
+    if(err) {
+      /*Error Handling*/
+      callback(err);
+    }
+    /*Create readable stream to read obj file line by line*/
+    var readable = self.createReadStream(objFileString);
+
+    readable
+      .pipe(split())
+      .on('data', function(line) {
+        self.parseObj(line);
+      })
+      .on('end', function() {
+
+        /*Start reading .mtl file*/
+        if(typeof mtlFilePath === "string" && mtlFilePath !== "") {
+          xhr(mtlFilePath, function (err, resp, mtlFileString) {
+
+            if(err) {
+              callback(err);
+            }
+
+            var currentMat = {};
+            var readable = self.createReadStream(mtlFileString);
+
+            readable
+              .pipe(split())
+              .on('data', function(line) {
+                currentMat = self.parseMtl(line, currentMat);
+              })
+              .on('end', function() {
+                if(currentMat.name) {
+                  self.materials.push(currentMat);
+                }
+                /*Geometry and Materials*/
+                callback(
+                  null,
+                  {
+                    vertices: self.vertices,
+                    normals: self.normals,
+                    textureCoords: self.textureCoords,
+                    faces: self.faces,
+                    facesMaterialsIndex: self.facesMaterialsIndex,
+                    materials: self.materials
+                  }
+                );
+              })
+              .on('err', function(err) {
+                /*Error Handling*/
+                callback(err)
+              });
+          });
+        }
+        else {
+          /*Only Geometry*/
+          callback(
+            null,
+            {
+              vertices: self.vertices,
+              normals: self.normals,
+              textureCoords: self.textureCoords,
+              faces: self.faces
+            }
+          );
+        }
+      })
+      .on('err', function(err) {
+        /*Error Handling*/
+        callback(err);
+      });
+  });
+}
+
+
+ObjLoader.prototype.createReadStream = function(fileString) {
+  var readable = new stream.Readable();
+  readable._read = function noop() {};
+  readable.push(fileString);
+  readable.push(null);
+  return readable;
+}
+
+
+ObjLoader.prototype.parseObj = function(line) {
+
+  /*Not include comment*/
+  var commentStart = line.indexOf("#");
+  if(commentStart != -1) {
+    line = line.substring(0, commentStart);
+  }
+  line = line.trim();
+
+  var splitedLine = line.split(/\s+/);
+
+  if(splitedLine[0] === 'v') {
+    var vertex = [Number(splitedLine[1]), Number(splitedLine[2]), Number(splitedLine[3]), splitedLine[4]? 1 : Number(splitedLine[4])];
+    this.vertices.push(vertex);
+  }
+  else if(splitedLine[0] === 'vt') {
+    var textureCoord = [Number(splitedLine[1]), Number(splitedLine[2]), splitedLine[3]? 1 : Number(splitedLine[3])]
+    this.textureCoords.push(textureCoord);
+  }
+  else if(splitedLine[0] === 'vn') {
+    var normal = [Number(splitedLine[1]), Number(splitedLine[2]), Number(splitedLine[3])];
+    this.normals.push(normal);
+  }
+  else if(splitedLine[0] === 'f') {
+    var face = {
+      indices: [],
+      texture: [],
+      normal: []
+      };
+
+    for(var i = 1; i < splitedLine.length; ++i) {
+      var dIndex = splitedLine[i].indexOf('//');
+      var splitedFaceIndices = splitedLine[i].split(/\W+/);
+
+      if(dIndex > 0) {
+        /*Vertex Normal Indices Without Texture Coordinate Indices*/
+        face.indices.push(splitedFaceIndices[0]);
+        face.normal.push(splitedFaceIndices[1]);
+      }
+      else {
+        if(splitedFaceIndices.length === 1) {
+          /*Vertex Indices*/
+          face.indices.push(splitedFaceIndices[0]);
+        }
+        else if(splitedFaceIndices.length === 2) {
+          /*Vertex Texture Coordinate Indices*/
+          face.indices.push(splitedFaceIndices[0]);
+          face.texture.push(splitedFaceIndices[1]);
+        }
+        else if(splitedFaceIndices.length === 3) {
+          /*Vertex Normal Indices*/
+          face.indices.push(splitedFaceIndices[0]);
+          face.texture.push(splitedFaceIndices[1]);
+          face.normal.push(splitedFaceIndices[2]);
+        }
+      }
+    }
+
+    this.faces.push(face);
+  }
+  else if(splitedLine[0] === "usemtl") {
+    if(this.faces.length === 0) {
+      this.facesMaterialsIndex[0].materialName = splitedLine[1];
+    }
+    else {
+      var materialName = splitedLine[1];
+      var materialStartIndex = this.faces.length;
+
+      this.facesMaterialsIndex.push({materialName: materialName, materialStartIndex: materialStartIndex});
+    }
+  }
+}
+
+
+ObjLoader.prototype.parseMtl = function(line, currentMat) {
+
+  /*Not include comment*/
+  var commentStart = line.indexOf("#");
+  if(commentStart != -1) {
+    line = line.substring(0, commentStart);
+  }
+
+  line = line.trim();
+  var splitedLine = line.split(/\s+/);
+
+  if(splitedLine[0] === "newmtl") {
+    if(currentMat.name) {
+      this.materials.push(currentMat);
+      currentMat = {};
+    }
+    currentMat.name = splitedLine[1];
+  }
+  else if(splitedLine[0] === "Ka") {
+    currentMat.ambient = [];
+    for(var i = 0; i < 3; ++i) {
+      currentMat.ambient.push(splitedLine[i+1]);
+    }
+  }
+  else if(splitedLine[0] === "Kd") {
+    currentMat.diffuse = [];
+    for(var i = 0; i < 3; ++i) {
+      currentMat.diffuse.push(splitedLine[i+1]);
+    }
+  }
+  else if(splitedLine[0] === "Ks") {
+    currentMat.specular = [];
+    for(var i = 0; i < 3; ++i) {
+      currentMat.specular.push(splitedLine[i+1]);
+    }
+  }
+  else if(splitedLine[0] === "Ns") {
+    currentMat.specularExponent = splitedLine[1];
+  }
+  else if(splitedLine[0] === "d" || splitedLine[0] === "Tr") {
+    currentMat.transparent = splitedLine[1];
+  }
+  else if(splitedLine[0] === "illum") {
+    currentMat.illumMode = splitedLine[1];
+  }
+  else if(splitedLine[0] === "map_Ka") {
+    currentMat.ambientMap = splitedLine[1];
+  }
+  else if(splitedLine[0] === "map_Kd") {
+    currentMat.diffuseMap = splitedLine[1];
+  }
+  else if(splitedLine[0] === "map_Ks") {
+    currentMat.specularMap = splitedLine[1];
+  }
+  else if(splitedLine[0] === "map_d") {
+    currentMat.alphaMat = splitedLine[1];
+  }
+  else if(splitedLine[0] === "map_bump" || splitedLine[0] === "bump") {
+    currentMat.bumpMap = splitedLine[1];
+  }
+  else if(splitedLine[0] === "disp") {
+    currentMat.displacementMap = splitedLine[1];
+  }
+
+  return currentMat;
+}
+
+
+module.exports = ObjLoader;
+
+
+/***/ }),
+/* 43 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.byteLength = byteLength
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i]
+  revLookup[code.charCodeAt(i)] = i
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup['-'.charCodeAt(0)] = 62
+revLookup['_'.charCodeAt(0)] = 63
+
+function placeHoldersCount (b64) {
+  var len = b64.length
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // the number of equal signs (place holders)
+  // if there are two placeholders, than the two characters before it
+  // represent one byte
+  // if there is only one, then the three characters before it represent 2 bytes
+  // this is just a cheap hack to not do indexOf twice
+  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+}
+
+function byteLength (b64) {
+  // base64 is 4/3 + up to two characters of the original data
+  return (b64.length * 3 / 4) - placeHoldersCount(b64)
+}
+
+function toByteArray (b64) {
+  var i, l, tmp, placeHolders, arr
+  var len = b64.length
+  placeHolders = placeHoldersCount(b64)
+
+  arr = new Arr((len * 3 / 4) - placeHolders)
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  l = placeHolders > 0 ? len - 4 : len
+
+  var L = 0
+
+  for (i = 0; i < l; i += 4) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+    arr[L++] = (tmp >> 16) & 0xFF
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  if (placeHolders === 2) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[L++] = tmp & 0xFF
+  } else if (placeHolders === 1) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp = ((uint8[i] << 16) & 0xFF0000) + ((uint8[i + 1] << 8) & 0xFF00) + (uint8[i + 2] & 0xFF)
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var output = ''
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    output += lookup[tmp >> 2]
+    output += lookup[(tmp << 4) & 0x3F]
+    output += '=='
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
+    output += lookup[tmp >> 10]
+    output += lookup[(tmp >> 4) & 0x3F]
+    output += lookup[(tmp << 2) & 0x3F]
+    output += '='
+  }
+
+  parts.push(output)
+
+  return parts.join('')
+}
+
+
+/***/ }),
+/* 44 */
+/***/ (function(module, exports) {
+
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = (value * c - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+
+/***/ }),
+/* 45 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
+/* 46 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Buffer = __webpack_require__(9).Buffer;
+var util = __webpack_require__(47);
+
+function copyBuffer(src, target, offset) {
+  src.copy(target, offset);
+}
+
+module.exports = function () {
+  function BufferList() {
+    _classCallCheck(this, BufferList);
+
+    this.head = null;
+    this.tail = null;
+    this.length = 0;
+  }
+
+  BufferList.prototype.push = function push(v) {
+    var entry = { data: v, next: null };
+    if (this.length > 0) this.tail.next = entry;else this.head = entry;
+    this.tail = entry;
+    ++this.length;
+  };
+
+  BufferList.prototype.unshift = function unshift(v) {
+    var entry = { data: v, next: this.head };
+    if (this.length === 0) this.tail = entry;
+    this.head = entry;
+    ++this.length;
+  };
+
+  BufferList.prototype.shift = function shift() {
+    if (this.length === 0) return;
+    var ret = this.head.data;
+    if (this.length === 1) this.head = this.tail = null;else this.head = this.head.next;
+    --this.length;
+    return ret;
+  };
+
+  BufferList.prototype.clear = function clear() {
+    this.head = this.tail = null;
+    this.length = 0;
+  };
+
+  BufferList.prototype.join = function join(s) {
+    if (this.length === 0) return '';
+    var p = this.head;
+    var ret = '' + p.data;
+    while (p = p.next) {
+      ret += s + p.data;
+    }return ret;
+  };
+
+  BufferList.prototype.concat = function concat(n) {
+    if (this.length === 0) return Buffer.alloc(0);
+    if (this.length === 1) return this.head.data;
+    var ret = Buffer.allocUnsafe(n >>> 0);
+    var p = this.head;
+    var i = 0;
+    while (p) {
+      copyBuffer(p.data, ret, i);
+      i += p.data.length;
+      p = p.next;
+    }
+    return ret;
+  };
+
+  return BufferList;
+}();
+
+if (util && util.inspect && util.inspect.custom) {
+  module.exports.prototype[util.inspect.custom] = function () {
+    var obj = util.inspect({ length: this.length });
+    return this.constructor.name + ' ' + obj;
+  };
+}
+
+/***/ }),
+/* 47 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
+/* 48 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {var apply = Function.prototype.apply;
+
+// DOM APIs, for completeness
+
+exports.setTimeout = function() {
+  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
+};
+exports.setInterval = function() {
+  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
+};
+exports.clearTimeout =
+exports.clearInterval = function(timeout) {
+  if (timeout) {
+    timeout.close();
+  }
+};
+
+function Timeout(id, clearFn) {
+  this._id = id;
+  this._clearFn = clearFn;
+}
+Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+Timeout.prototype.close = function() {
+  this._clearFn.call(window, this._id);
+};
+
+// Does not start the time, just sets up the members needed.
+exports.enroll = function(item, msecs) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = msecs;
+};
+
+exports.unenroll = function(item) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = -1;
+};
+
+exports._unrefActive = exports.active = function(item) {
+  clearTimeout(item._idleTimeoutId);
+
+  var msecs = item._idleTimeout;
+  if (msecs >= 0) {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
+      if (item._onTimeout)
+        item._onTimeout();
+    }, msecs);
+  }
+};
+
+// setimmediate attaches itself to the global object
+__webpack_require__(49);
+// On some exotic environments, it's not clear which object `setimmeidate` was
+// able to install onto.  Search each possibility in the same order as the
+// `setimmediate` library.
+exports.setImmediate = (typeof self !== "undefined" && self.setImmediate) ||
+                       (typeof global !== "undefined" && global.setImmediate) ||
+                       (this && this.setImmediate);
+exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
+                         (typeof global !== "undefined" && global.clearImmediate) ||
+                         (this && this.clearImmediate);
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ }),
+/* 49 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
+    "use strict";
+
+    if (global.setImmediate) {
+        return;
+    }
+
+    var nextHandle = 1; // Spec says greater than zero
+    var tasksByHandle = {};
+    var currentlyRunningATask = false;
+    var doc = global.document;
+    var registerImmediate;
+
+    function setImmediate(callback) {
+      // Callback can either be a function or a string
+      if (typeof callback !== "function") {
+        callback = new Function("" + callback);
+      }
+      // Copy function arguments
+      var args = new Array(arguments.length - 1);
+      for (var i = 0; i < args.length; i++) {
+          args[i] = arguments[i + 1];
+      }
+      // Store and register the task
+      var task = { callback: callback, args: args };
+      tasksByHandle[nextHandle] = task;
+      registerImmediate(nextHandle);
+      return nextHandle++;
+    }
+
+    function clearImmediate(handle) {
+        delete tasksByHandle[handle];
+    }
+
+    function run(task) {
+        var callback = task.callback;
+        var args = task.args;
+        switch (args.length) {
+        case 0:
+            callback();
+            break;
+        case 1:
+            callback(args[0]);
+            break;
+        case 2:
+            callback(args[0], args[1]);
+            break;
+        case 3:
+            callback(args[0], args[1], args[2]);
+            break;
+        default:
+            callback.apply(undefined, args);
+            break;
+        }
+    }
+
+    function runIfPresent(handle) {
+        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
+        // So if we're currently running a task, we'll need to delay this invocation.
+        if (currentlyRunningATask) {
+            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
+            // "too much recursion" error.
+            setTimeout(runIfPresent, 0, handle);
+        } else {
+            var task = tasksByHandle[handle];
+            if (task) {
+                currentlyRunningATask = true;
+                try {
+                    run(task);
+                } finally {
+                    clearImmediate(handle);
+                    currentlyRunningATask = false;
+                }
+            }
+        }
+    }
+
+    function installNextTickImplementation() {
+        registerImmediate = function(handle) {
+            process.nextTick(function () { runIfPresent(handle); });
+        };
+    }
+
+    function canUsePostMessage() {
+        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
+        // where `global.postMessage` means something completely different and can't be used for this purpose.
+        if (global.postMessage && !global.importScripts) {
+            var postMessageIsAsynchronous = true;
+            var oldOnMessage = global.onmessage;
+            global.onmessage = function() {
+                postMessageIsAsynchronous = false;
+            };
+            global.postMessage("", "*");
+            global.onmessage = oldOnMessage;
+            return postMessageIsAsynchronous;
+        }
+    }
+
+    function installPostMessageImplementation() {
+        // Installs an event handler on `global` for the `message` event: see
+        // * https://developer.mozilla.org/en/DOM/window.postMessage
+        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
+
+        var messagePrefix = "setImmediate$" + Math.random() + "$";
+        var onGlobalMessage = function(event) {
+            if (event.source === global &&
+                typeof event.data === "string" &&
+                event.data.indexOf(messagePrefix) === 0) {
+                runIfPresent(+event.data.slice(messagePrefix.length));
+            }
+        };
+
+        if (global.addEventListener) {
+            global.addEventListener("message", onGlobalMessage, false);
+        } else {
+            global.attachEvent("onmessage", onGlobalMessage);
+        }
+
+        registerImmediate = function(handle) {
+            global.postMessage(messagePrefix + handle, "*");
+        };
+    }
+
+    function installMessageChannelImplementation() {
+        var channel = new MessageChannel();
+        channel.port1.onmessage = function(event) {
+            var handle = event.data;
+            runIfPresent(handle);
+        };
+
+        registerImmediate = function(handle) {
+            channel.port2.postMessage(handle);
+        };
+    }
+
+    function installReadyStateChangeImplementation() {
+        var html = doc.documentElement;
+        registerImmediate = function(handle) {
+            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
+            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
+            var script = doc.createElement("script");
+            script.onreadystatechange = function () {
+                runIfPresent(handle);
+                script.onreadystatechange = null;
+                html.removeChild(script);
+                script = null;
+            };
+            html.appendChild(script);
+        };
+    }
+
+    function installSetTimeoutImplementation() {
+        registerImmediate = function(handle) {
+            setTimeout(runIfPresent, 0, handle);
+        };
+    }
+
+    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
+    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
+    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
+
+    // Don't get fooled by e.g. browserify environments.
+    if ({}.toString.call(global.process) === "[object process]") {
+        // For Node.js before 0.9
+        installNextTickImplementation();
+
+    } else if (canUsePostMessage()) {
+        // For non-IE10 modern browsers
+        installPostMessageImplementation();
+
+    } else if (global.MessageChannel) {
+        // For web workers, where supported
+        installMessageChannelImplementation();
+
+    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
+        // For IE 6–8
+        installReadyStateChangeImplementation();
+
+    } else {
+        // For older browsers
+        installSetTimeoutImplementation();
+    }
+
+    attachTo.setImmediate = setImmediate;
+    attachTo.clearImmediate = clearImmediate;
+}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1), __webpack_require__(6)))
+
+/***/ }),
+/* 50 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {
+/**
+ * Module exports.
+ */
+
+module.exports = deprecate;
+
+/**
+ * Mark that a method should not be used.
+ * Returns a modified function which warns once by default.
+ *
+ * If `localStorage.noDeprecation = true` is set, then it is a no-op.
+ *
+ * If `localStorage.throwDeprecation = true` is set, then deprecated functions
+ * will throw an Error when invoked.
+ *
+ * If `localStorage.traceDeprecation = true` is set, then deprecated functions
+ * will invoke `console.trace()` instead of `console.error()`.
+ *
+ * @param {Function} fn - the function to deprecate
+ * @param {String} msg - the string to print to the console when `fn` is invoked
+ * @returns {Function} a new "deprecated" version of `fn`
+ * @api public
+ */
+
+function deprecate (fn, msg) {
+  if (config('noDeprecation')) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (config('throwDeprecation')) {
+        throw new Error(msg);
+      } else if (config('traceDeprecation')) {
+        console.trace(msg);
+      } else {
+        console.warn(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+}
+
+/**
+ * Checks `localStorage` for boolean values for the given `name`.
+ *
+ * @param {String} name
+ * @returns {Boolean}
+ * @api private
+ */
+
+function config (name) {
+  // accessing global.localStorage can trigger a DOMException in sandboxed iframes
+  try {
+    if (!global.localStorage) return false;
+  } catch (_) {
+    return false;
+  }
+  var val = global.localStorage[name];
+  if (null == val) return false;
+  return String(val).toLowerCase() === 'true';
+}
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ }),
+/* 51 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// a passthrough stream.
+// basically just the most minimal sort of Transform stream.
+// Every written chunk gets output as-is.
+
+
+
+module.exports = PassThrough;
+
+var Transform = __webpack_require__(23);
+
+/*<replacement>*/
+var util = __webpack_require__(7);
+util.inherits = __webpack_require__(4);
+/*</replacement>*/
+
+util.inherits(PassThrough, Transform);
+
+function PassThrough(options) {
+  if (!(this instanceof PassThrough)) return new PassThrough(options);
+
+  Transform.call(this, options);
+}
+
+PassThrough.prototype._transform = function (chunk, encoding, cb) {
+  cb(null, chunk);
+};
+
+/***/ }),
+/* 52 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(12);
+
+
+/***/ }),
+/* 53 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(2);
+
+
+/***/ }),
+/* 54 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(11).Transform
+
+
+/***/ }),
+/* 55 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__(11).PassThrough
+
+
+/***/ }),
+/* 56 */
+/***/ (function(module, exports, __webpack_require__) {
+
+//filter will reemit the data if cb(err,pass) pass is truthy
+
+// reduce is more tricky
+// maybe we want to group the reductions or emit progress updates occasionally
+// the most basic reduce just emits one 'data' event after it has recieved 'end'
+
+
+var through = __webpack_require__(57)
+var Decoder = __webpack_require__(13).StringDecoder
+
+module.exports = split
+
+//TODO pass in a function to map across the lines.
+
+function split (matcher, mapper, options) {
+  var decoder = new Decoder()
+  var soFar = ''
+  var maxLength = options && options.maxLength;
+  if('function' === typeof matcher)
+    mapper = matcher, matcher = null
+  if (!matcher)
+    matcher = /\r?\n/
+
+  function emit(stream, piece) {
+    if(mapper) {
+      try {
+        piece = mapper(piece)
+      }
+      catch (err) {
+        return stream.emit('error', err)
+      }
+      if('undefined' !== typeof piece)
+        stream.queue(piece)
+    }
+    else
+      stream.queue(piece)
+  }
+
+  function next (stream, buffer) {
+    var pieces = ((soFar != null ? soFar : '') + buffer).split(matcher)
+    soFar = pieces.pop()
+
+    if (maxLength && soFar.length > maxLength)
+      stream.emit('error', new Error('maximum buffer reached'))
+
+    for (var i = 0; i < pieces.length; i++) {
+      var piece = pieces[i]
+      emit(stream, piece)
+    }
+  }
+
+  return through(function (b) {
+    next(this, decoder.write(b))
+  },
+  function () {
+    if(decoder.end)
+      next(this, decoder.end())
+    if(soFar != null)
+      emit(this, soFar)
+    this.queue(null)
+  })
+}
+
+
+
+/***/ }),
+/* 57 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {var Stream = __webpack_require__(17)
+
+// through
+//
+// a stream that does nothing but re-emit the input.
+// useful for aggregating a series of changing but not ending streams into one stream)
+
+exports = module.exports = through
+through.through = through
+
+//create a readable writable stream.
+
+function through (write, end, opts) {
+  write = write || function (data) { this.queue(data) }
+  end = end || function () { this.queue(null) }
+
+  var ended = false, destroyed = false, buffer = [], _ended = false
+  var stream = new Stream()
+  stream.readable = stream.writable = true
+  stream.paused = false
+
+//  stream.autoPause   = !(opts && opts.autoPause   === false)
+  stream.autoDestroy = !(opts && opts.autoDestroy === false)
+
+  stream.write = function (data) {
+    write.call(this, data)
+    return !stream.paused
+  }
+
+  function drain() {
+    while(buffer.length && !stream.paused) {
+      var data = buffer.shift()
+      if(null === data)
+        return stream.emit('end')
+      else
+        stream.emit('data', data)
+    }
+  }
+
+  stream.queue = stream.push = function (data) {
+//    console.error(ended)
+    if(_ended) return stream
+    if(data === null) _ended = true
+    buffer.push(data)
+    drain()
+    return stream
+  }
+
+  //this will be registered as the first 'end' listener
+  //must call destroy next tick, to make sure we're after any
+  //stream piped from here.
+  //this is only a problem if end is not emitted synchronously.
+  //a nicer way to do this is to make sure this is the last listener for 'end'
+
+  stream.on('end', function () {
+    stream.readable = false
+    if(!stream.writable && stream.autoDestroy)
+      process.nextTick(function () {
+        stream.destroy()
+      })
+  })
+
+  function _end () {
+    stream.writable = false
+    end.call(stream)
+    if(!stream.readable && stream.autoDestroy)
+      stream.destroy()
+  }
+
+  stream.end = function (data) {
+    if(ended) return
+    ended = true
+    if(arguments.length) stream.write(data)
+    _end() // will emit or queue
+    return stream
+  }
+
+  stream.destroy = function () {
+    if(destroyed) return
+    destroyed = true
+    ended = true
+    buffer.length = 0
+    stream.writable = stream.readable = false
+    stream.emit('close')
+    return stream
+  }
+
+  stream.pause = function () {
+    if(stream.paused) return
+    stream.paused = true
+    return stream
+  }
+
+  stream.resume = function () {
+    if(stream.paused) {
+      stream.paused = false
+      stream.emit('resume')
+    }
+    drain()
+    //may have become paused again,
+    //as drain emits 'data'.
+    if(!stream.paused)
+      stream.emit('drain')
+    return stream
+  }
+  return stream
+}
+
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
+
+/***/ }),
+/* 58 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var window = __webpack_require__(59)
+var isFunction = __webpack_require__(24)
+var parseHeaders = __webpack_require__(60)
+var xtend = __webpack_require__(63)
+
+module.exports = createXHR
+createXHR.XMLHttpRequest = window.XMLHttpRequest || noop
+createXHR.XDomainRequest = "withCredentials" in (new createXHR.XMLHttpRequest()) ? createXHR.XMLHttpRequest : window.XDomainRequest
+
+forEachArray(["get", "put", "post", "patch", "head", "delete"], function(method) {
+    createXHR[method === "delete" ? "del" : method] = function(uri, options, callback) {
+        options = initParams(uri, options, callback)
+        options.method = method.toUpperCase()
+        return _createXHR(options)
+    }
+})
+
+function forEachArray(array, iterator) {
+    for (var i = 0; i < array.length; i++) {
+        iterator(array[i])
+    }
+}
+
+function isEmpty(obj){
+    for(var i in obj){
+        if(obj.hasOwnProperty(i)) return false
+    }
+    return true
+}
+
+function initParams(uri, options, callback) {
+    var params = uri
+
+    if (isFunction(options)) {
+        callback = options
+        if (typeof uri === "string") {
+            params = {uri:uri}
+        }
+    } else {
+        params = xtend(options, {uri: uri})
+    }
+
+    params.callback = callback
+    return params
+}
+
+function createXHR(uri, options, callback) {
+    options = initParams(uri, options, callback)
+    return _createXHR(options)
+}
+
+function _createXHR(options) {
+    if(typeof options.callback === "undefined"){
+        throw new Error("callback argument missing")
+    }
+
+    var called = false
+    var callback = function cbOnce(err, response, body){
+        if(!called){
+            called = true
+            options.callback(err, response, body)
+        }
+    }
+
+    function readystatechange() {
+        if (xhr.readyState === 4) {
+            setTimeout(loadFunc, 0)
+        }
+    }
+
+    function getBody() {
+        // Chrome with requestType=blob throws errors arround when even testing access to responseText
+        var body = undefined
+
+        if (xhr.response) {
+            body = xhr.response
+        } else {
+            body = xhr.responseText || getXml(xhr)
+        }
+
+        if (isJson) {
+            try {
+                body = JSON.parse(body)
+            } catch (e) {}
+        }
+
+        return body
+    }
+
+    function errorFunc(evt) {
+        clearTimeout(timeoutTimer)
+        if(!(evt instanceof Error)){
+            evt = new Error("" + (evt || "Unknown XMLHttpRequest Error") )
+        }
+        evt.statusCode = 0
+        return callback(evt, failureResponse)
+    }
+
+    // will load the data & process the response in a special response object
+    function loadFunc() {
+        if (aborted) return
+        var status
+        clearTimeout(timeoutTimer)
+        if(options.useXDR && xhr.status===undefined) {
+            //IE8 CORS GET successful response doesn't have a status field, but body is fine
+            status = 200
+        } else {
+            status = (xhr.status === 1223 ? 204 : xhr.status)
+        }
+        var response = failureResponse
+        var err = null
+
+        if (status !== 0){
+            response = {
+                body: getBody(),
+                statusCode: status,
+                method: method,
+                headers: {},
+                url: uri,
+                rawRequest: xhr
+            }
+            if(xhr.getAllResponseHeaders){ //remember xhr can in fact be XDR for CORS in IE
+                response.headers = parseHeaders(xhr.getAllResponseHeaders())
+            }
+        } else {
+            err = new Error("Internal XMLHttpRequest Error")
+        }
+        return callback(err, response, response.body)
+    }
+
+    var xhr = options.xhr || null
+
+    if (!xhr) {
+        if (options.cors || options.useXDR) {
+            xhr = new createXHR.XDomainRequest()
+        }else{
+            xhr = new createXHR.XMLHttpRequest()
+        }
+    }
+
+    var key
+    var aborted
+    var uri = xhr.url = options.uri || options.url
+    var method = xhr.method = options.method || "GET"
+    var body = options.body || options.data
+    var headers = xhr.headers = options.headers || {}
+    var sync = !!options.sync
+    var isJson = false
+    var timeoutTimer
+    var failureResponse = {
+        body: undefined,
+        headers: {},
+        statusCode: 0,
+        method: method,
+        url: uri,
+        rawRequest: xhr
+    }
+
+    if ("json" in options && options.json !== false) {
+        isJson = true
+        headers["accept"] || headers["Accept"] || (headers["Accept"] = "application/json") //Don't override existing accept header declared by user
+        if (method !== "GET" && method !== "HEAD") {
+            headers["content-type"] || headers["Content-Type"] || (headers["Content-Type"] = "application/json") //Don't override existing accept header declared by user
+            body = JSON.stringify(options.json === true ? body : options.json)
+        }
+    }
+
+    xhr.onreadystatechange = readystatechange
+    xhr.onload = loadFunc
+    xhr.onerror = errorFunc
+    // IE9 must have onprogress be set to a unique function.
+    xhr.onprogress = function () {
+        // IE must die
+    }
+    xhr.onabort = function(){
+        aborted = true;
+    }
+    xhr.ontimeout = errorFunc
+    xhr.open(method, uri, !sync, options.username, options.password)
+    //has to be after open
+    if(!sync) {
+        xhr.withCredentials = !!options.withCredentials
+    }
+    // Cannot set timeout with sync request
+    // not setting timeout on the xhr object, because of old webkits etc. not handling that correctly
+    // both npm's request and jquery 1.x use this kind of timeout, so this is being consistent
+    if (!sync && options.timeout > 0 ) {
+        timeoutTimer = setTimeout(function(){
+            if (aborted) return
+            aborted = true//IE9 may still call readystatechange
+            xhr.abort("timeout")
+            var e = new Error("XMLHttpRequest timeout")
+            e.code = "ETIMEDOUT"
+            errorFunc(e)
+        }, options.timeout )
+    }
+
+    if (xhr.setRequestHeader) {
+        for(key in headers){
+            if(headers.hasOwnProperty(key)){
+                xhr.setRequestHeader(key, headers[key])
+            }
+        }
+    } else if (options.headers && !isEmpty(options.headers)) {
+        throw new Error("Headers cannot be set on an XDomainRequest object")
+    }
+
+    if ("responseType" in options) {
+        xhr.responseType = options.responseType
+    }
+
+    if ("beforeSend" in options &&
+        typeof options.beforeSend === "function"
+    ) {
+        options.beforeSend(xhr)
+    }
+
+    // Microsoft Edge browser sends "undefined" when send is called with undefined value.
+    // XMLHttpRequest spec says to pass null as body to indicate no body
+    // See https://github.com/naugtur/xhr/issues/100.
+    xhr.send(body || null)
+
+    return xhr
+
+
+}
+
+function getXml(xhr) {
+    // xhr.responseXML will throw Exception "InvalidStateError" or "DOMException"
+    // See https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseXML.
+    try {
+        if (xhr.responseType === "document") {
+            return xhr.responseXML
+        }
+        var firefoxBugTakenEffect = xhr.responseXML && xhr.responseXML.documentElement.nodeName === "parsererror"
+        if (xhr.responseType === "" && !firefoxBugTakenEffect) {
+            return xhr.responseXML
+        }
+    } catch (e) {}
+
+    return null
+}
+
+function noop() {}
+
+
+/***/ }),
+/* 59 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {var win;
+
+if (typeof window !== "undefined") {
+    win = window;
+} else if (typeof global !== "undefined") {
+    win = global;
+} else if (typeof self !== "undefined"){
+    win = self;
+} else {
+    win = {};
+}
+
+module.exports = win;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ }),
+/* 60 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var trim = __webpack_require__(61)
+  , forEach = __webpack_require__(62)
+  , isArray = function(arg) {
+      return Object.prototype.toString.call(arg) === '[object Array]';
+    }
+
+module.exports = function (headers) {
+  if (!headers)
+    return {}
+
+  var result = {}
+
+  forEach(
+      trim(headers).split('\n')
+    , function (row) {
+        var index = row.indexOf(':')
+          , key = trim(row.slice(0, index)).toLowerCase()
+          , value = trim(row.slice(index + 1))
+
+        if (typeof(result[key]) === 'undefined') {
+          result[key] = value
+        } else if (isArray(result[key])) {
+          result[key].push(value)
+        } else {
+          result[key] = [ result[key], value ]
+        }
+      }
+  )
+
+  return result
+}
+
+/***/ }),
+/* 61 */
+/***/ (function(module, exports) {
+
+
+exports = module.exports = trim;
+
+function trim(str){
+  return str.replace(/^\s*|\s*$/g, '');
+}
+
+exports.left = function(str){
+  return str.replace(/^\s*/, '');
+};
+
+exports.right = function(str){
+  return str.replace(/\s*$/, '');
+};
+
+
+/***/ }),
+/* 62 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var isFunction = __webpack_require__(24)
+
+module.exports = forEach
+
+var toString = Object.prototype.toString
+var hasOwnProperty = Object.prototype.hasOwnProperty
+
+function forEach(list, iterator, context) {
+    if (!isFunction(iterator)) {
+        throw new TypeError('iterator must be a function')
+    }
+
+    if (arguments.length < 3) {
+        context = this
+    }
+    
+    if (toString.call(list) === '[object Array]')
+        forEachArray(list, iterator, context)
+    else if (typeof list === 'string')
+        forEachString(list, iterator, context)
+    else
+        forEachObject(list, iterator, context)
+}
+
+function forEachArray(array, iterator, context) {
+    for (var i = 0, len = array.length; i < len; i++) {
+        if (hasOwnProperty.call(array, i)) {
+            iterator.call(context, array[i], i, array)
+        }
+    }
+}
+
+function forEachString(string, iterator, context) {
+    for (var i = 0, len = string.length; i < len; i++) {
+        // no such thing as a sparse string.
+        iterator.call(context, string.charAt(i), i, string)
+    }
+}
+
+function forEachObject(object, iterator, context) {
+    for (var k in object) {
+        if (hasOwnProperty.call(object, k)) {
+            iterator.call(context, object[k], k, object)
+        }
+    }
+}
+
+
+/***/ }),
+/* 63 */
+/***/ (function(module, exports) {
+
+module.exports = extend
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+function extend() {
+    var target = {}
+
+    for (var i = 0; i < arguments.length; i++) {
+        var source = arguments[i]
+
+        for (var key in source) {
+            if (hasOwnProperty.call(source, key)) {
+                target[key] = source[key]
+            }
+        }
+    }
+
+    return target
+}
+
+
+/***/ }),
+/* 64 */
+/***/ (function(module, exports) {
+
+module.exports = "#version 300 es\n\n// These consts should be consistent with those in OpenGLRneder.ts & Particle.ts\n#define POSITION_LOCATION 2\n#define VELOCITY_LOCATION 3\n#define COLOR_LOCATION 4\n#define TIME_LOCATION 5\n#define ID_LOCATION 6\n#define MESH_ATTRACT_LOCATION1 7\n#define MESH_ATTRACT_LOCATION2 8\n\nprecision highp float;\nprecision highp int;\nprecision highp sampler3D;\n\n\nconst float PI = 3.14159;\nconst float TWO_PI = 6.2831;\n\n// const vec3 attractPos = vec3(0.0, 5.0, 0.0);\n\nuniform vec3 u_inputColor1;\nuniform vec3 u_inputColor2;\nuniform float u_colChangeFreq;\n\nuniform float u_Time;\nuniform vec3  u_Acceleration;\nuniform int   u_IsAttract;\nuniform vec3  u_AttractPos;\nuniform float u_MeshAtrractPointCount;\nuniform int   u_MeshSelect;\n\n\nuniform mat4 u_Model;       // The matrix that defines the transformation of the\n                            // object we're rendering. In this assignment,\n                            // this will be the result of traversing your scene graph.\n\nuniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.\n                            // This allows us to transform the object's normals properly\n                            // if the object has been non-uniformly scaled.\n\nuniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation.\n                            // We've written a static matrix for you to use for HW2,\n                            // but in HW3 you'll have to generate one yourself\n\n\nlayout(location = POSITION_LOCATION) in vec3 a_position;\nlayout(location = VELOCITY_LOCATION) in vec3 a_velocity;\nlayout(location = COLOR_LOCATION) in vec3 a_color;\nlayout(location = TIME_LOCATION) in vec2 a_time; // vec.x is spawn time, vec.y is lifetime\nlayout(location = ID_LOCATION) in float a_ID;\nlayout(location = MESH_ATTRACT_LOCATION1) in vec3 a_mesh_attract_pos1;\nlayout(location = MESH_ATTRACT_LOCATION2) in vec3 a_mesh_attract_pos2;\n\n\nout vec3 v_position;\nout vec3 v_velocity;\nout vec3 v_color;\nout vec2 v_time; // vec.x spawn time, vec.y lifetime\n\n\nfloat rand(vec2 co){\n    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);\n}\n\n\nvec3 genParticlePosInSphere(float spaceSphereRadius){\n        float theta = PI * rand(vec2(a_ID, fract(u_Time) * a_ID));\n        float phi   = TWO_PI * rand(vec2(fract(u_Time) * a_ID, a_ID));\n        \n        return vec3(rand(vec2(a_ID, 1.5 * a_ID)) * spaceSphereRadius * sin(theta)*cos(phi), \n                    rand(vec2(a_ID, 2.5 * a_ID)) * spaceSphereRadius * cos(theta), \n                    rand(vec2(a_ID, 0.5 * a_ID)) * spaceSphereRadius * sin(theta)*sin(phi));\n}\n\n\n\nvoid main()\n{   \n\n    // if(a_ID > 90000.0){\n    //     // -----------------------------------------------------------------\n    //     // ---------------- old version particle update --------------------\n    //     // -----------------------------------------------------------------\n\n    //     // ************ particles should emit like a fountain **************\n\n    //     // if the particle's spawn is 0.0 or its life time exceeds its life time\n    //     if (a_time.x == 0.0 || (u_Time - a_time.x > a_time.y) || a_position.y < -0.5) {\n    //     // if (a_time.x == 0.0 || (u_Time - a_time.x > a_time.y)) {\n\n    //         // Generate a new particle\n    //         v_position = vec3(0.0, 0.8, 0.0);\n            \n    //         v_velocity = vec3(rand(vec2(a_ID, 0.0)) - 0.5, rand(vec2(a_ID, a_ID)), rand(vec2(a_ID, 2.0 * a_ID)) - 0.5);\n    //         v_velocity *= 1.0;\n\n    //         v_color = vec3(rand(vec2(a_ID, 0.0)), rand(vec2(a_ID, a_ID)), rand(vec2(a_ID, 2.0 * a_ID)));\n\n    //         v_time.x = u_Time; // update spawn time\n\n    //         v_time.y = 2500.0; // set life time\n    //     } else {\n    //         // Update status information\n    //         v_velocity = a_velocity + 0.01 * u_Acceleration;\n    //         v_position = a_position + 0.01 * v_velocity;\n\n    //         v_color = a_color;\n\n    //         v_time = a_time;\n    //     }\n    //     // -----------------------------------------------------------------\n    // }\n\n    // else{\n        float spaceSphereRadius = 13.0;\n        float distToCenter = length(a_position);\n        float t = (spaceSphereRadius - distToCenter) / spaceSphereRadius;\n\n        float tmp = 0.5 * (sin(0.001 * u_colChangeFreq * u_Time) + 1.0);\n        vec3 color1 = (1.0 - tmp) * u_inputColor1 + tmp * u_inputColor2;\n        vec3 color2 = (1.0 - tmp) * u_inputColor2 + tmp * u_inputColor1;\n\n        // a new particle\n        if(a_time.x == 0.0 || distToCenter > spaceSphereRadius){\n            // setup initial position\n            v_position = genParticlePosInSphere(spaceSphereRadius);\n\n            // velocity (random)\n            v_velocity = vec3(rand(vec2(a_ID, 0.0)) - 0.5, rand(vec2(a_ID, a_ID)) - 0.5, rand(vec2(2.0 * a_ID, 2.0 * a_ID)) - 0.5);\n            v_velocity = normalize(v_velocity);\n\n            // color\n            v_color = color1 * (1.0 - t) + color2 * t; // lerp color based on distance\n\n            // spawn time\n            v_time.x = u_Time;\n\n            // life time\n            v_time.y = 5000.0; \n        }\n        // an old particle\n        // update particle information\n        else{\n            // update positin\n            float rotationSpeed = 0.1;\n            float deltaTime = 0.01;\n\n            vec3 vel = vec3(0.0, 0.0, 0.0);\n            bool isUpdatePos = true;\n\n            // mesh attract force\n            // so far, very naive version and one vertex will attract one particle\n            if(a_ID < float(u_MeshAtrractPointCount)){\n                vec3 dirVec = vec3(0.0, 0.0, 0.0);\n                float dist = 0.0;\n\n                if(u_MeshSelect == 1){\n                dirVec = a_mesh_attract_pos1 - a_position;\n                dist = distance(a_mesh_attract_pos1, a_position);\n                }\n                else if(u_MeshSelect == 2){\n                dirVec = a_mesh_attract_pos2 - a_position;\n                dist = distance(a_mesh_attract_pos2, a_position);\n                }\n\n                // vel = deltaTime * 500.0 * dist * dist * dirVec;\n                vel = deltaTime * 1000.0 * dirVec;\n            }\n            else{\n                // original random velcoity\n                vel = a_velocity; \n\n                // tangent direction rotating velcoity\n                vec3 tmp = normalize(a_position);\n                tmp = cross(vec3(0, 1, 0), tmp); \n                vel += vel + 0.7 * tmp;\n            }\n\n            // mouse click attractive/repel force\n            if(u_IsAttract != 0){\n                vec3 dirVec = u_AttractPos - a_position;\n                float dist = length(dirVec);\n                dirVec = normalize(dirVec);\n\n                vel = vel + float(u_IsAttract) * deltaTime * 5000.0 * 1.0 / dist * dirVec;\n            }\n            \n            // calculate final position\n            if(isUpdatePos){\n                v_position = a_position + deltaTime * rotationSpeed * vel;\n            }\n            else{\n                v_position = a_position;\n            }\n\n            // keep original random velcoity\n            v_velocity = a_velocity; \n            \n            // lerp color based on distance\n            v_color = color1 * (1.0 - t) + color2 * t; \n    \n\n            v_time = a_time;\n        }\n    // }\n    // ---------------------------------------------\n    // can be used for drawing dots\n\n    // vec4 objPos = vec4(v_position, 1.0);\n    // vec4 modelPos = u_Model * objPos;\n    // gl_Position = modelPos;\n}"
+
+/***/ }),
+/* 65 */
+/***/ (function(module, exports) {
+
+module.exports = " #version 300 es\nprecision highp float;\nprecision highp int;\n\nuniform vec4 u_Color;\nout vec4 color;\n\n\n// not used here\nvoid main()\n{\n    //color = u_Color;\n}"
+
+/***/ }),
+/* 66 */
+/***/ (function(module, exports) {
+
+module.exports = "#version 300 es\n\n// These consts should be consistent with those in OpenGLRneder.ts & Particle.ts\n#define POSITION_LOCATION 2\n// #define VELOCITY_LOCATION 3\n#define COLOR_LOCATION 4\n// #define TIME_LOCATION 5\n// #define ID_LOCATION 6\n\nprecision highp float;\nprecision highp int;\nprecision highp sampler3D;\n\n\n\nuniform mat4 u_Model;       // The matrix that defines the transformation of the\n                            // object we're rendering. In this assignment,\n                            // this will be the result of traversing your scene graph.\n\n// uniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.\n//                             // This allows us to transform the object's normals properly\n//                             // if the object has been non-uniformly scaled.\n\nuniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation.\n                            // We've written a static matrix for you to use for HW2,\n                            // but in HW3 you'll have to generate one yourself\n\nuniform mat3 u_CameraAxes; // Used for rendering particles as billboards (quads that are always looking at the camera)\n\n\nlayout(location = POSITION_LOCATION) in vec3 a_position;\nlayout(location = COLOR_LOCATION) in vec3 a_color;\n\n\n\n\nin vec4 vs_Pos; // Non-instanced; each particle is the same quad drawn in a different place\n\nout vec4 fs_Pos;\nout vec4 fs_Col;\n\nvoid main()\n{\n    // object space position\n    fs_Pos = vs_Pos;\n\n    // particle color\n    fs_Col = vec4(a_color, 1.0);\n\n    // get particle postion\n    vec3 offset = a_position;\n\n    // model space position\n    vec4 modelPos = u_Model * vs_Pos;\n\n    // move billboard to partice position\n    vec3 billboardPos = offset + modelPos.x * u_CameraAxes[0] + modelPos.y * u_CameraAxes[1];\n\n    gl_Position = u_ViewProj * vec4(billboardPos, 1.0);\n}"
+
+/***/ }),
 /* 67 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\r\n\r\nuniform mat4 u_ViewProj;\r\nuniform float u_Time;\r\n\r\nuniform mat3 u_CameraAxes; // Used for rendering particles as billboards (quads that are always looking at the camera)\r\n// gl_Position = center + vs_Pos.x * camRight + vs_Pos.y * camUp;\r\n\r\nin vec4 vs_Pos; // Non-instanced; each particle is the same quad drawn in a different place\r\nin vec4 vs_Col; // An instanced rendering attribute; each particle instance has a different color\r\nin vec3 vs_Translate; // Another instance rendering attribute used to position each quad instance in the scene\r\n\r\nout vec4 fs_Col;\r\nout vec4 fs_Pos;\r\n\r\nvoid main()\r\n{\r\n    fs_Col = vs_Col;\r\n    fs_Pos = vs_Pos;\r\n\r\n    vec3 offset = vs_Translate;\r\n    offset.z = (sin((u_Time + offset.x) * 3.14159 * 0.1) + cos((u_Time + offset.y) * 3.14159 * 0.1)) * 1.5;\r\n\r\n    vec3 billboardPos = offset + vs_Pos.x * u_CameraAxes[0] + vs_Pos.y * u_CameraAxes[1];\r\n\r\n    gl_Position = u_ViewProj * vec4(billboardPos, 1.0);\r\n}\r\n"
-
-/***/ }),
-/* 68 */
-/***/ (function(module, exports) {
-
-module.exports = "#version 300 es\r\nprecision highp float;\r\n\r\nin vec4 fs_Col;\r\nin vec4 fs_Pos;\r\n\r\nout vec4 out_Col;\r\n\r\nvoid main()\r\n{\r\n    float dist = 1.0 - (length(fs_Pos.xyz) * 2.0);\r\n    out_Col = vec4(dist) * fs_Col;\r\n}\r\n"
+module.exports = " #version 300 es\nprecision highp float;\nprecision highp int;\n\nuniform vec4 u_Color;\nuniform float u_Time;\nuniform float u_ParticleRadius;    // a particle radius related to the whole billboard\nuniform float u_BreathRate;\n\nin vec4 fs_Pos;\nin vec4 fs_Col;\n\nout vec4 out_Col;\n\n\nvoid main()\n{\n    float dist = 1.0 - (length(fs_Pos.xyz) * 1.0 / u_ParticleRadius);\n\n    float scale = 0.5 * (sin(0.0005 * u_BreathRate * u_Time) + 1.0) + 0.35;\n    if(scale > 1.15){\n        scale = 1.15;\n    }\n\n    out_Col = vec4(dist) * fs_Col * scale;\n}"
 
 /***/ })
 /******/ ]);
